@@ -56,7 +56,7 @@ public class Config {
 
     Config() throws IOException {
         Properties properties = new Properties();
-        Path configPath = Paths.get(System.getProperty("cfe_30.config.location", System.getProperty("user.dir") + "/etc/application.properties"));
+        Path configPath = Paths.get(System.getProperty("cfe_39.config.location", System.getProperty("user.dir") + "/etc/application.properties"));
         LOGGER.info("Loading application config <[{}]>", configPath.toAbsolutePath());
 
         try(InputStream inputStream = Files.newInputStream(configPath)) {

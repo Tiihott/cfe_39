@@ -1,0 +1,25 @@
+@Library('integra-itg') _
+pipeline {
+  agent {
+    node {
+      label 'konata.xnet.fi'
+    }
+  }
+  stages {
+    stage('Build on Rocky 8') {
+      steps {
+        script {
+          docker.withRegistry("https://junkyard.xnet.fi", 'd5e1a76d-a45b-4350-b2a9-089c1c958f74') {
+            def rocky = baseimages.getLatest("rocky/development")
+            rocky.inside() {
+              configFileProvider([configFile(fileId: '8b6d07fd-7548-4c3c-ac67-457b39d60f86', variable: 'MAVEN_SETTINGS')]) {
+                sh "mvn -B -s $MAVEN_SETTINGS -Drevision=${git.describe()} -Dchangelist='' clean package"
+                sh "mvn -B -s $MAVEN_SETTINGS -Drevision=${git.describe()} -Dchangelist='' -f rpm.pom.xml deploy"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
