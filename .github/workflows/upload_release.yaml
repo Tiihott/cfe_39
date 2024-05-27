@@ -1,0 +1,34 @@
+name: Upload Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  upload:
+    name: Upload
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Cache Local Maven Repository
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+
+      - name: Setup Signing
+        uses: actions/setup-java@v2
+        with:
+          java-version: 8.0.292+10
+          distribution: 'adopt'
+          gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
+      - name: Package jar
+        run: mvn --batch-mode -Drevision=${{ github.event.release.tag_name }} -Dsha1= -Dchangelist= clean package
+
+#      - name: Deploy rpm
+#        run: mvn --batch-mode -Drevision=${{ github.event.release.tag_name }} -Dsha1= -Dchangelist= --file rpm.pom.xml deploy"
