@@ -339,7 +339,6 @@ public class Ingestion0FilesTest {
         assertDoesNotThrow(() -> {
             fs = FileSystem.get(URI.create(hdfsuri), conf);
 
-            Path workingDir = fs.getWorkingDirectory();
             Path newDirectoryPath = new Path(path);
             Assertions.assertTrue(fs.exists(newDirectoryPath));
 

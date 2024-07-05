@@ -254,10 +254,10 @@ public class DatabaseOutput implements Consumer<List<RecordOffset>> {
             }
 
             byte[] byteArray = recordOffsetObject.getRecord(); // loads the byte[] contained in recordOffsetObject.getRecord() to byteArray.
-            batchBytes = batchBytes + byteArray.length;
+            batchBytes = batchBytes + byteArray.length; // FIXME: Exception in thread "__consumer_offsets1" java.lang.NullPointerException
             InputStream inputStream = new ByteArrayInputStream(byteArray);
             rfc5424Frame.load(inputStream);
-            try {
+            try { // FIXME: Exception in thread "__consumer_offsets2" com.teragrep.rlo_06.PriorityParseException: PRIORITY < missing
                 if (rfc5424Frame.next()) {
                     /*                     rfc5424Frame has loaded the record data, it's ready for deserialization.
                       Implement AVRO serialization for the Kafka records here, preparing the data for writing to HDFS.

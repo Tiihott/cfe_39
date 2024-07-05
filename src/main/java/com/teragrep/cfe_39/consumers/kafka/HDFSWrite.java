@@ -145,7 +145,7 @@ public class HDFSWrite implements AutoCloseable {
         // The code for writing the file to HDFS should be same for both test (non-kerberized access) and prod (kerberized access).
         try {
             //==== Create directory if not exists
-            Path workingDir = fs.getWorkingDirectory();
+            // FIXME: Exception in thread "jla_022" java.lang.RuntimeException: File 18.717496 already exists. Triggered at row 168
             // Sets the directory where the data should be stored, if the directory doesn't exist then it's created.
             Path newDirectoryPath = new Path(path);
             if (!fs.exists(newDirectoryPath)) {

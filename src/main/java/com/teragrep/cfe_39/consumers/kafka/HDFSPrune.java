@@ -65,7 +65,6 @@ public class HDFSPrune {
         this.fs = fs;
         String path = config.getHdfsPath().concat("/").concat(topicName);
         //==== Create directory if not exists
-        Path workingDir = fs.getWorkingDirectory();
         newDirectoryPath = new Path(path);
         if (!fs.exists(newDirectoryPath)) {
             // Create new Directory

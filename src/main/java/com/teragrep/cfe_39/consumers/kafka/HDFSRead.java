@@ -72,7 +72,6 @@ public final class HDFSRead implements AutoCloseable {
     public Map<TopicPartition, Long> hdfsStartOffsets() throws IOException {
         Map<TopicPartition, Long> offsets = new HashMap<>();
 
-        Path workingDir = fs.getWorkingDirectory();
         Path newDirectoryPath = new Path(path);
         if (!fs.exists(newDirectoryPath)) {
             // Create new Directory
