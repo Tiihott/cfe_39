@@ -144,8 +144,13 @@ public class HDFSWrite implements AutoCloseable {
     public void commit(File syslogFile) {
         // The code for writing the file to HDFS should be same for both test (non-kerberized access) and prod (kerberized access).
         try {
+            // Re-login the user from keytab if TGT is expired or is close to expiry.
+            if (!useMockKafkaConsumer) {
+                UserGroupInformation loginUser = UserGroupInformation.getLoginUser();
+                loginUser.checkTGTAndReloginFromKeytab();
+            }
             //==== Create directory if not exists
-            // FIXME: Exception in thread "jla_022" java.lang.RuntimeException: File 18.717496 already exists. Triggered at row 168
+            // FIXME: Exception in thread "jla_022" java.lang.RuntimeException: File 18.717496 already exists. Triggered at row 173
             // Sets the directory where the data should be stored, if the directory doesn't exist then it's created.
             Path newDirectoryPath = new Path(path);
             if (!fs.exists(newDirectoryPath)) {
