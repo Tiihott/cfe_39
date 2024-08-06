@@ -120,6 +120,7 @@ public class HDFSWrite implements AutoCloseable {
             // enable kerberus
             conf.set("hadoop.security.authentication", config.getHadoopAuthentication());
             conf.set("hadoop.security.authorization", config.getHadoopAuthorization());
+            conf.set("hadoop.kerberos.keytab.login.autorenewal.enabled", "true");
 
             conf.set("fs.defaultFS", hdfsuri); // Set FileSystem URI
             conf.set("fs.hdfs.impl", DistributedFileSystem.class.getName()); // Maven stuff?
@@ -144,11 +145,6 @@ public class HDFSWrite implements AutoCloseable {
     public void commit(File syslogFile) {
         // The code for writing the file to HDFS should be same for both test (non-kerberized access) and prod (kerberized access).
         try {
-            // Re-login the user from keytab if TGT is expired or is close to expiry.
-            if (!useMockKafkaConsumer) {
-                UserGroupInformation loginUser = UserGroupInformation.getLoginUser();
-                loginUser.checkTGTAndReloginFromKeytab();
-            }
             //==== Create directory if not exists
             // FIXME: Exception in thread "jla_022" java.lang.RuntimeException: File 18.717496 already exists. Triggered at row 173
             // Sets the directory where the data should be stored, if the directory doesn't exist then it's created.
