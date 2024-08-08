@@ -228,6 +228,16 @@ public class MockKafkaConsumerFactory {
                                         .getBytes(StandardCharsets.UTF_8)
                         )
                 );
+        consumer
+                .addRecord(
+                        new ConsumerRecord<>(
+                                topicName,
+                                partition,
+                                14L,
+                                "2022-04-25T07:34:52.244Z".getBytes(StandardCharsets.UTF_8),
+                                null
+                        )
+                );
     }
 
     // Can initialize topic scan with all partitions available when the input parameter is 0. Consumer is manually assigned to specific partitions depending on the threadnum parameter. For example on threadnum 1 consumer has odd numbered partitions assigned to it and threadnum 2 has the even numbered partitions.
