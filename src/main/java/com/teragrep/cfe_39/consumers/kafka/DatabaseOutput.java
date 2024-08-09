@@ -254,15 +254,16 @@ public class DatabaseOutput implements Consumer<List<RecordOffset>> {
             }
 
             byte[] byteArray = recordOffsetObject.getRecord(); // loads the byte[] contained in recordOffsetObject.getRecord() to byteArray.
-            batchBytes = batchBytes + byteArray.length;
             InputStream inputStream = new ByteArrayInputStream(byteArray);
             rfc5424Frame.load(inputStream);
             try {
                 if (rfc5424Frame.next()) {
-                    /*                     rfc5424Frame has loaded the record data, it's ready for deserialization.
+                    /*rfc5424Frame has loaded the record data, it's ready for deserialization.
                       Implement AVRO serialization for the Kafka records here, preparing the data for writing to HDFS.
                       Write all the data into a file using AVRO.
                       The size of each AVRO-serialized file should be as close to 64M as possible.*/
+
+                    batchBytes = batchBytes + byteArray.length;
 
                     // input
                     final byte[] source = eventToSource();
@@ -322,6 +323,13 @@ public class DatabaseOutput implements Consumer<List<RecordOffset>> {
             }
             catch (IOException e) {
                 throw new UncheckedIOException(e);
+            }
+            catch (ParseException e) {
+                LOGGER
+                        .warn(
+                                "A non-parseable consumed record was detected. Skipping processing the record and moving to the next one"
+                        );
+                continue;
             }
         }
 
