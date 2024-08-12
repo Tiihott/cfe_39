@@ -85,13 +85,8 @@ public class KafkaReader implements AutoCloseable {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("adding from offset: <{}>", record.offset());
             }
-            if (record.value() != null) {
-                recordOffsetObjectList
-                        .add(new RecordOffset(record.topic(), record.partition(), record.offset(), record.value()));
-            }
-            else {
-                LOGGER.debug("NULL record content, skipping");
-            }
+            recordOffsetObjectList
+                    .add(new RecordOffset(record.topic(), record.partition(), record.offset(), record.value()));
         }
 
         if (!recordOffsetObjectList.isEmpty()) {

@@ -254,6 +254,10 @@ public class DatabaseOutput implements Consumer<List<RecordOffset>> {
             }
 
             byte[] byteArray = recordOffsetObject.getRecord(); // loads the byte[] contained in recordOffsetObject.getRecord() to byteArray.
+            if (byteArray == null) {
+                LOGGER.debug("NULL record content, skipping");
+                continue;
+            }
             InputStream inputStream = new ByteArrayInputStream(byteArray);
             rfc5424Frame.load(inputStream);
             try {
