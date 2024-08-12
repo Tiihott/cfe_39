@@ -77,6 +77,8 @@ public class Config {
     private long maximumFileSize;
     private final int numOfConsumers;
     private final long pruneOffset;
+    private final boolean skipNonRFC5424Records;
+    private final boolean skipEmptyRFC5424Records;
 
     public Config() throws IOException {
         Properties properties = new Properties();
@@ -143,6 +145,14 @@ public class Config {
         // kafka
         this.queueTopicPattern = properties.getProperty("queueTopicPattern", "^.*$");
         this.numOfConsumers = Integer.parseInt(properties.getProperty("numOfConsumers", "1"));
+
+        // skip non RFC5424 records
+        this.skipNonRFC5424Records = properties.getProperty("skipNonRFC5424Records", "false").equalsIgnoreCase("true");
+
+        // skip empty RFC5424 records
+        this.skipEmptyRFC5424Records = properties
+                .getProperty("skipEmptyRFC5424Records", "false")
+                .equalsIgnoreCase("true");
 
         this.kafkaConsumerProperties = loadSubProperties(properties, "consumer.");
         String loginConfig = properties
@@ -246,5 +256,13 @@ public class Config {
 
     public long getPruneOffset() {
         return pruneOffset;
+    }
+
+    public boolean getSkipNonRFC5424Records() {
+        return skipNonRFC5424Records;
+    }
+
+    public boolean getSkipEmptyRFC5424Records() {
+        return skipEmptyRFC5424Records;
     }
 }

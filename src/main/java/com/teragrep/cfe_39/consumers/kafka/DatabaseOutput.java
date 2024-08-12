@@ -95,6 +95,8 @@ public class DatabaseOutput implements Consumer<List<RecordOffset>> {
     private final SDVector originHostname;
     private File syslogFile;
     private final Config config;
+    private final boolean skipNonRFC5424Records;
+    private final boolean skipEmptyRFC5424Records;
 
     public DatabaseOutput(
             Config config,
@@ -121,6 +123,8 @@ public class DatabaseOutput implements Consumer<List<RecordOffset>> {
         this.eventNodeSourceHostname = new SDVector("event_node_source@48577", "hostname");
         this.eventNodeRelayHostname = new SDVector("event_node_relay@48577", "hostname");
         this.originHostname = new SDVector("origin@48577", "hostname");
+        this.skipNonRFC5424Records = config.getSkipNonRFC5424Records();
+        this.skipEmptyRFC5424Records = config.getSkipEmptyRFC5424Records();
     }
 
     // Checks that the filesize stays under the defined maximum file size. If the file is about to go over target limit commits the file to HDFS and returns true, otherwise does nothing and returns false.
@@ -255,8 +259,23 @@ public class DatabaseOutput implements Consumer<List<RecordOffset>> {
 
             byte[] byteArray = recordOffsetObject.getRecord(); // loads the byte[] contained in recordOffsetObject.getRecord() to byteArray.
             if (byteArray == null) {
-                LOGGER.debug("NULL record content, skipping");
-                continue;
+                if (skipEmptyRFC5424Records) {
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER
+                                .debug(
+                                        "Skipping processing an empty non RFC5424 record. Record metadata: {}",
+                                        recordOffsetObject.offsetToJSON()
+                                );
+                    }
+                    continue;
+                }
+                else {
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Null record metadata: {}", recordOffsetObject.offsetToJSON());
+                    }
+                    throw new NullPointerException();
+                }
+
             }
             InputStream inputStream = new ByteArrayInputStream(byteArray);
             rfc5424Frame.load(inputStream);
@@ -329,11 +348,26 @@ public class DatabaseOutput implements Consumer<List<RecordOffset>> {
                 throw new UncheckedIOException(e);
             }
             catch (ParseException e) {
-                LOGGER
-                        .warn(
-                                "A non-parseable consumed record was detected. Skipping processing the record and moving to the next one"
-                        );
-                continue;
+                if (skipNonRFC5424Records) {
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER
+                                .debug(
+                                        "Skipping processing a non RFC5424 record, record metadata: {}. Exception information: ",
+                                        recordOffsetObject.offsetToJSON(), e
+                                );
+                    }
+                    continue;
+                }
+                else {
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER
+                                .debug(
+                                        "Record metadata that is causing ParseException: {}.",
+                                        recordOffsetObject.offsetToJSON()
+                                );
+                    }
+                    throw new RuntimeException(e);
+                }
             }
         }
 
