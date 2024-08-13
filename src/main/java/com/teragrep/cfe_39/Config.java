@@ -73,6 +73,7 @@ public class Config {
     private final String hadoopAuthorization;
     private final String kerberosKeytabUser;
     private final String kerberosKeytabPath;
+    private final String kerberosLoginAutorenewal;
     private final String kerberosTestMode;
     private long maximumFileSize;
     private final int numOfConsumers;
@@ -139,6 +140,10 @@ public class Config {
         this.kerberosKeytabPath = properties.getProperty("KerberosKeytabPath");
         if (this.kerberosKeytabPath == null) {
             throw new IllegalArgumentException("kerberosKeytabPath not set");
+        }
+        this.kerberosLoginAutorenewal = properties.getProperty("kerberosLoginAutorenewal");
+        if (this.kerberosLoginAutorenewal == null) {
+            throw new IllegalArgumentException("kerberosLoginAutorenewal not set");
         }
         this.kerberosTestMode = properties.getProperty("dfs.client.use.datanode.hostname", "false");
 
@@ -264,5 +269,9 @@ public class Config {
 
     public boolean getSkipEmptyRFC5424Records() {
         return skipEmptyRFC5424Records;
+    }
+
+    public String getKerberosLoginAutorenewal() {
+        return kerberosLoginAutorenewal;
     }
 }
