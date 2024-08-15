@@ -273,7 +273,8 @@ public class DatabaseOutput implements Consumer<List<RecordOffset>> {
                     if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug("Null record metadata: {}", recordOffsetObject.offsetToJSON());
                     }
-                    throw new NullPointerException();
+                    syslogFile.delete(); // Clean up
+                    throw new NullPointerException("Record with null content detected during processing.");
                 }
 
             }
@@ -366,6 +367,7 @@ public class DatabaseOutput implements Consumer<List<RecordOffset>> {
                                         recordOffsetObject.offsetToJSON()
                                 );
                     }
+                    syslogFile.delete(); // Clean up
                     throw new RuntimeException(e);
                 }
             }
