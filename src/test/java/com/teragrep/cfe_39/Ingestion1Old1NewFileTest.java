@@ -86,6 +86,7 @@ public class Ingestion1Old1NewFileTest {
             // Create a HDFS miniCluster
             baseDir = Files.createTempDirectory("test_hdfs").toFile().getAbsoluteFile();
             hdfsCluster = new TestMiniClusterFactory().create(config, baseDir);
+            config = new Config("hdfs://localhost:" + hdfsCluster.getNameNodePort() + "/");
             fs = new TestFileSystemFactory().create(config.getHdfsuri());
 
             // Inserts pre-made avro-files to HDFS where one file has new timestamp and other old, which are normally generated during data ingestion from mock kafka consumer.

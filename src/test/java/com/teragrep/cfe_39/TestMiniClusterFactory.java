@@ -62,8 +62,6 @@ public class TestMiniClusterFactory {
         conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, baseDir.getAbsolutePath());
         MiniDFSCluster.Builder builder = new MiniDFSCluster.Builder(conf);
         hdfsCluster = builder.build();
-        String hdfsURI = "hdfs://localhost:" + hdfsCluster.getNameNodePort() + "/";
-        config.setHdfsuri(hdfsURI);
         DistributedFileSystem fileSystem = hdfsCluster.getFileSystem();
         return hdfsCluster;
     }

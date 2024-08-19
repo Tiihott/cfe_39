@@ -64,7 +64,7 @@ public class Config {
     private final Properties kafkaConsumerProperties;
     private static final Logger LOGGER = LoggerFactory.getLogger(Config.class);
     private final String hdfsPath;
-    private String hdfsuri;
+    private final String hdfsuri;
     private final String queueDirectory;
     private final String kerberosHost;
     private final String kerberosRealm;
@@ -82,6 +82,10 @@ public class Config {
     private final boolean skipEmptyRFC5424Records;
 
     public Config() throws IOException {
+        this("");
+    }
+
+    public Config(String hdfsuri) throws IOException {
         Properties properties = new Properties();
         Path configPath = Paths
                 .get(System.getProperty("cfe_39.config.location", "/opt/teragrep/cfe_39/etc/application.properties"));
@@ -94,7 +98,12 @@ public class Config {
 
         // HDFS
         this.hdfsPath = properties.getProperty("hdfsPath", "hdfs:///opt/teragrep/cfe_39/srv/");
-        this.hdfsuri = properties.getProperty("hdfsuri");
+        if (hdfsuri.isEmpty() || hdfsuri == null) {
+            this.hdfsuri = properties.getProperty("hdfsuri");
+        }
+        else {
+            this.hdfsuri = hdfsuri;
+        }
         if (this.hdfsuri == null) {
             throw new IllegalArgumentException("hdfsuri not set");
         }
@@ -193,10 +202,6 @@ public class Config {
 
     public String getHdfsPath() {
         return hdfsPath;
-    }
-
-    public void setHdfsuri(String input) {
-        this.hdfsuri = input;
     }
 
     public String getHdfsuri() {
