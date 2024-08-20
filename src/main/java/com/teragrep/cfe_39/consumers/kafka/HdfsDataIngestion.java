@@ -142,7 +142,7 @@ public class HdfsDataIngestion {
         hdfsStartOffsets = new HashMap<>();
     }
 
-    public void run() throws InterruptedException {
+    public void run() throws InterruptedException, IOException {
 
         // Initialize and register duration statistics
         DurationStatistics durationStatistics = new DurationStatistics();
@@ -161,6 +161,9 @@ public class HdfsDataIngestion {
         }
 
         while (keepRunning) {
+            if ("kerberos".equals(config.getHadoopAuthentication())) {
+                UserGroupInformation.getLoginUser().checkTGTAndReloginFromKeytab();
+            }
             LOGGER.debug("Scanning for threads");
             topicScan(durationStatistics, topicCounters);
 

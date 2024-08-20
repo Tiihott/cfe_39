@@ -132,10 +132,6 @@ public class HDFSWrite implements AutoCloseable {
             // server principal, the kerberos principle that the namenode is using
             conf.set("dfs.namenode.kerberos.principal.pattern", config.getKerberosPrincipal());
 
-            // set usergroup stuff
-            UserGroupInformation.setConfiguration(conf);
-            UserGroupInformation.loginUserFromKeytab(config.getKerberosKeytabUser(), config.getKerberosKeytabPath());
-
             // filesystem for HDFS access is set here
             fs = FileSystem.get(conf);
         }
