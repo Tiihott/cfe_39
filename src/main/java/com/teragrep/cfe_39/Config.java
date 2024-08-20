@@ -80,6 +80,8 @@ public class Config {
     private final long pruneOffset;
     private final boolean skipNonRFC5424Records;
     private final boolean skipEmptyRFC5424Records;
+    private final String dfsDataTransferProtection;
+    private final String dfsEncryptDataTransferCipherSuites;
 
     public Config() throws IOException {
         Properties properties = new Properties();
@@ -146,6 +148,15 @@ public class Config {
             throw new IllegalArgumentException("kerberosLoginAutorenewal not set");
         }
         this.kerberosTestMode = properties.getProperty("dfs.client.use.datanode.hostname", "false");
+
+        this.dfsDataTransferProtection = properties.getProperty("dfs.data.transfer.protection");
+        if (this.dfsDataTransferProtection == null) {
+            throw new IllegalArgumentException("dfsDataTransferProtection not set");
+        }
+        this.dfsEncryptDataTransferCipherSuites = properties.getProperty("dfs.encrypt.data.transfer.cipher.suites");
+        if (this.dfsEncryptDataTransferCipherSuites == null) {
+            throw new IllegalArgumentException("dfsEncryptDataTransferCipherSuites not set");
+        }
 
         // kafka
         this.queueTopicPattern = properties.getProperty("queueTopicPattern", "^.*$");
@@ -273,5 +284,13 @@ public class Config {
 
     public String getKerberosLoginAutorenewal() {
         return kerberosLoginAutorenewal;
+    }
+
+    public String getDfsDataTransferProtection() {
+        return dfsDataTransferProtection;
+    }
+
+    public String getDfsEncryptDataTransferCipherSuites() {
+        return dfsEncryptDataTransferCipherSuites;
     }
 }
