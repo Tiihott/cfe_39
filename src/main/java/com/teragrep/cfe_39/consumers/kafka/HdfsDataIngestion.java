@@ -133,6 +133,9 @@ public class HdfsDataIngestion {
             /* server principal
              the kerberos principle that the namenode is using*/
             conf.set("dfs.namenode.kerberos.principal.pattern", config.getKerberosPrincipal());
+            // set sasl
+            conf.set("dfs.data.transfer.protection", config.getDfsDataTransferProtection());
+            conf.set("dfs.encrypt.data.transfer.cipher.suites", config.getDfsEncryptDataTransferCipherSuites());
             // set usergroup stuff
             UserGroupInformation.setConfiguration(conf);
             UserGroupInformation.loginUserFromKeytab(config.getKerberosKeytabUser(), config.getKerberosKeytabPath());
