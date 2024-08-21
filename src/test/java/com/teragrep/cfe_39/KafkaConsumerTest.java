@@ -159,7 +159,7 @@ public class KafkaConsumerTest {
                                 "{\"topic\":\"testConsumerTopic\", \"partition\":7, \"offset\":" + i + "}",
                                 recordOffset.offsetToJSON()
                         );
-                rfc5424Frame.load(new ByteArrayInputStream(recordOffset.getRecord()));
+                rfc5424Frame.load(new ByteArrayInputStream(recordOffset.record()));
                 Assertions.assertTrue(rfc5424Frame.next());
                 Assertions.assertTrue(iterator.hasNext());
                 Assertions.assertEquals(iterator.next(), rfc5424Frame.msg.toString());
@@ -173,7 +173,7 @@ public class KafkaConsumerTest {
                             "{\"topic\":\"testConsumerTopic\", \"partition\":7, \"offset\":" + 14 + "}",
                             recordOffset.offsetToJSON()
                     );
-            Assertions.assertNull(recordOffset.getRecord());
+            Assertions.assertNull(recordOffset.record());
             counter++;
 
             recordOffset = messages.get(0).get(counter);
@@ -182,7 +182,7 @@ public class KafkaConsumerTest {
                             "{\"topic\":\"testConsumerTopic\", \"partition\":7, \"offset\":" + 15 + "}",
                             recordOffset.offsetToJSON()
                     );
-            rfc5424Frame.load(new ByteArrayInputStream(recordOffset.getRecord()));
+            rfc5424Frame.load(new ByteArrayInputStream(recordOffset.record()));
             ParseException e = Assertions.assertThrows(ParseException.class, rfc5424Frame::next);
             Assertions.assertEquals("PRIORITY < missing", e.getMessage());
             counter++;
@@ -195,7 +195,7 @@ public class KafkaConsumerTest {
                                 "{\"topic\":\"testConsumerTopic\", \"partition\":5, \"offset\":" + i + "}",
                                 recordOffset.offsetToJSON()
                         );
-                rfc5424Frame.load(new ByteArrayInputStream(recordOffset.getRecord()));
+                rfc5424Frame.load(new ByteArrayInputStream(recordOffset.record()));
                 Assertions.assertTrue(rfc5424Frame.next());
                 Assertions.assertTrue(iterator.hasNext());
                 Assertions.assertEquals(iterator.next(), rfc5424Frame.msg.toString());
@@ -209,7 +209,7 @@ public class KafkaConsumerTest {
                             "{\"topic\":\"testConsumerTopic\", \"partition\":5, \"offset\":" + 14 + "}",
                             recordOffset.offsetToJSON()
                     );
-            Assertions.assertNull(recordOffset.getRecord());
+            Assertions.assertNull(recordOffset.record());
             counter++;
 
             recordOffset = messages.get(0).get(counter);
@@ -218,7 +218,7 @@ public class KafkaConsumerTest {
                             "{\"topic\":\"testConsumerTopic\", \"partition\":5, \"offset\":" + 15 + "}",
                             recordOffset.offsetToJSON()
                     );
-            rfc5424Frame.load(new ByteArrayInputStream(recordOffset.getRecord()));
+            rfc5424Frame.load(new ByteArrayInputStream(recordOffset.record()));
             e = Assertions.assertThrows(ParseException.class, rfc5424Frame::next);
             Assertions.assertEquals("PRIORITY < missing", e.getMessage());
             counter++;
@@ -231,7 +231,7 @@ public class KafkaConsumerTest {
                                 "{\"topic\":\"testConsumerTopic\", \"partition\":3, \"offset\":" + i + "}",
                                 recordOffset.offsetToJSON()
                         );
-                rfc5424Frame.load(new ByteArrayInputStream(recordOffset.getRecord()));
+                rfc5424Frame.load(new ByteArrayInputStream(recordOffset.record()));
                 Assertions.assertTrue(rfc5424Frame.next());
                 Assertions.assertTrue(iterator.hasNext());
                 Assertions.assertEquals(iterator.next(), rfc5424Frame.msg.toString());
@@ -245,7 +245,7 @@ public class KafkaConsumerTest {
                             "{\"topic\":\"testConsumerTopic\", \"partition\":3, \"offset\":" + 14 + "}",
                             recordOffset.offsetToJSON()
                     );
-            Assertions.assertNull(recordOffset.getRecord());
+            Assertions.assertNull(recordOffset.record());
             counter++;
 
             recordOffset = messages.get(0).get(counter);
@@ -254,7 +254,7 @@ public class KafkaConsumerTest {
                             "{\"topic\":\"testConsumerTopic\", \"partition\":3, \"offset\":" + 15 + "}",
                             recordOffset.offsetToJSON()
                     );
-            rfc5424Frame.load(new ByteArrayInputStream(recordOffset.getRecord()));
+            rfc5424Frame.load(new ByteArrayInputStream(recordOffset.record()));
             e = Assertions.assertThrows(ParseException.class, rfc5424Frame::next);
             Assertions.assertEquals("PRIORITY < missing", e.getMessage());
             counter++;
@@ -267,7 +267,7 @@ public class KafkaConsumerTest {
                                 "{\"topic\":\"testConsumerTopic\", \"partition\":1, \"offset\":" + i + "}",
                                 recordOffset.offsetToJSON()
                         );
-                rfc5424Frame.load(new ByteArrayInputStream(recordOffset.getRecord()));
+                rfc5424Frame.load(new ByteArrayInputStream(recordOffset.record()));
                 Assertions.assertTrue(rfc5424Frame.next());
                 Assertions.assertTrue(iterator.hasNext());
                 Assertions.assertEquals(iterator.next(), rfc5424Frame.msg.toString());
@@ -281,7 +281,7 @@ public class KafkaConsumerTest {
                             "{\"topic\":\"testConsumerTopic\", \"partition\":1, \"offset\":" + 14 + "}",
                             recordOffset.offsetToJSON()
                     );
-            Assertions.assertNull(recordOffset.getRecord());
+            Assertions.assertNull(recordOffset.record());
             counter++;
 
             recordOffset = messages.get(0).get(counter);
@@ -290,7 +290,7 @@ public class KafkaConsumerTest {
                             "{\"topic\":\"testConsumerTopic\", \"partition\":1, \"offset\":" + 15 + "}",
                             recordOffset.offsetToJSON()
                     );
-            rfc5424Frame.load(new ByteArrayInputStream(recordOffset.getRecord()));
+            rfc5424Frame.load(new ByteArrayInputStream(recordOffset.record()));
             e = Assertions.assertThrows(ParseException.class, rfc5424Frame::next);
             Assertions.assertEquals("PRIORITY < missing", e.getMessage());
             counter++;
@@ -303,7 +303,7 @@ public class KafkaConsumerTest {
                                 "{\"topic\":\"testConsumerTopic\", \"partition\":9, \"offset\":" + i + "}",
                                 recordOffset.offsetToJSON()
                         );
-                rfc5424Frame.load(new ByteArrayInputStream(recordOffset.getRecord()));
+                rfc5424Frame.load(new ByteArrayInputStream(recordOffset.record()));
                 Assertions.assertTrue(rfc5424Frame.next());
                 Assertions.assertTrue(iterator.hasNext());
                 Assertions.assertEquals(iterator.next(), rfc5424Frame.msg.toString());
@@ -317,7 +317,7 @@ public class KafkaConsumerTest {
                             "{\"topic\":\"testConsumerTopic\", \"partition\":9, \"offset\":" + 14 + "}",
                             recordOffset.offsetToJSON()
                     );
-            Assertions.assertNull(recordOffset.getRecord());
+            Assertions.assertNull(recordOffset.record());
             counter++;
 
             recordOffset = messages.get(0).get(counter);
@@ -326,7 +326,7 @@ public class KafkaConsumerTest {
                             "{\"topic\":\"testConsumerTopic\", \"partition\":9, \"offset\":" + 15 + "}",
                             recordOffset.offsetToJSON()
                     );
-            rfc5424Frame.load(new ByteArrayInputStream(recordOffset.getRecord()));
+            rfc5424Frame.load(new ByteArrayInputStream(recordOffset.record()));
             e = Assertions.assertThrows(ParseException.class, rfc5424Frame::next);
             Assertions.assertEquals("PRIORITY < missing", e.getMessage());
             counter++;
@@ -342,7 +342,7 @@ public class KafkaConsumerTest {
                                 "{\"topic\":\"testConsumerTopic\", \"partition\":8, \"offset\":" + i + "}",
                                 recordOffset.offsetToJSON()
                         );
-                rfc5424Frame.load(new ByteArrayInputStream(recordOffset.getRecord()));
+                rfc5424Frame.load(new ByteArrayInputStream(recordOffset.record()));
                 Assertions.assertTrue(rfc5424Frame.next());
                 Assertions.assertTrue(iterator.hasNext());
                 Assertions.assertEquals(iterator.next(), rfc5424Frame.msg.toString());
@@ -356,7 +356,7 @@ public class KafkaConsumerTest {
                             "{\"topic\":\"testConsumerTopic\", \"partition\":8, \"offset\":" + 14 + "}",
                             recordOffset.offsetToJSON()
                     );
-            Assertions.assertNull(recordOffset.getRecord());
+            Assertions.assertNull(recordOffset.record());
             counter++;
 
             recordOffset = messages.get(1).get(counter);
@@ -365,7 +365,7 @@ public class KafkaConsumerTest {
                             "{\"topic\":\"testConsumerTopic\", \"partition\":8, \"offset\":" + 15 + "}",
                             recordOffset.offsetToJSON()
                     );
-            rfc5424Frame.load(new ByteArrayInputStream(recordOffset.getRecord()));
+            rfc5424Frame.load(new ByteArrayInputStream(recordOffset.record()));
             e = Assertions.assertThrows(ParseException.class, rfc5424Frame::next);
             Assertions.assertEquals("PRIORITY < missing", e.getMessage());
             counter++;
@@ -378,7 +378,7 @@ public class KafkaConsumerTest {
                                 "{\"topic\":\"testConsumerTopic\", \"partition\":6, \"offset\":" + i + "}",
                                 recordOffset.offsetToJSON()
                         );
-                rfc5424Frame.load(new ByteArrayInputStream(recordOffset.getRecord()));
+                rfc5424Frame.load(new ByteArrayInputStream(recordOffset.record()));
                 Assertions.assertTrue(rfc5424Frame.next());
                 Assertions.assertTrue(iterator.hasNext());
                 Assertions.assertEquals(iterator.next(), rfc5424Frame.msg.toString());
@@ -392,7 +392,7 @@ public class KafkaConsumerTest {
                             "{\"topic\":\"testConsumerTopic\", \"partition\":6, \"offset\":" + 14 + "}",
                             recordOffset.offsetToJSON()
                     );
-            Assertions.assertNull(recordOffset.getRecord());
+            Assertions.assertNull(recordOffset.record());
             counter++;
 
             recordOffset = messages.get(1).get(counter);
@@ -401,7 +401,7 @@ public class KafkaConsumerTest {
                             "{\"topic\":\"testConsumerTopic\", \"partition\":6, \"offset\":" + 15 + "}",
                             recordOffset.offsetToJSON()
                     );
-            rfc5424Frame.load(new ByteArrayInputStream(recordOffset.getRecord()));
+            rfc5424Frame.load(new ByteArrayInputStream(recordOffset.record()));
             e = Assertions.assertThrows(ParseException.class, rfc5424Frame::next);
             Assertions.assertEquals("PRIORITY < missing", e.getMessage());
             counter++;
@@ -414,7 +414,7 @@ public class KafkaConsumerTest {
                                 "{\"topic\":\"testConsumerTopic\", \"partition\":4, \"offset\":" + i + "}",
                                 recordOffset.offsetToJSON()
                         );
-                rfc5424Frame.load(new ByteArrayInputStream(recordOffset.getRecord()));
+                rfc5424Frame.load(new ByteArrayInputStream(recordOffset.record()));
                 Assertions.assertTrue(rfc5424Frame.next());
                 Assertions.assertTrue(iterator.hasNext());
                 Assertions.assertEquals(iterator.next(), rfc5424Frame.msg.toString());
@@ -428,7 +428,7 @@ public class KafkaConsumerTest {
                             "{\"topic\":\"testConsumerTopic\", \"partition\":4, \"offset\":" + 14 + "}",
                             recordOffset.offsetToJSON()
                     );
-            Assertions.assertNull(recordOffset.getRecord());
+            Assertions.assertNull(recordOffset.record());
             counter++;
 
             recordOffset = messages.get(1).get(counter);
@@ -437,7 +437,7 @@ public class KafkaConsumerTest {
                             "{\"topic\":\"testConsumerTopic\", \"partition\":4, \"offset\":" + 15 + "}",
                             recordOffset.offsetToJSON()
                     );
-            rfc5424Frame.load(new ByteArrayInputStream(recordOffset.getRecord()));
+            rfc5424Frame.load(new ByteArrayInputStream(recordOffset.record()));
             e = Assertions.assertThrows(ParseException.class, rfc5424Frame::next);
             Assertions.assertEquals("PRIORITY < missing", e.getMessage());
             counter++;
@@ -450,7 +450,7 @@ public class KafkaConsumerTest {
                                 "{\"topic\":\"testConsumerTopic\", \"partition\":2, \"offset\":" + i + "}",
                                 recordOffset.offsetToJSON()
                         );
-                rfc5424Frame.load(new ByteArrayInputStream(recordOffset.getRecord()));
+                rfc5424Frame.load(new ByteArrayInputStream(recordOffset.record()));
                 Assertions.assertTrue(rfc5424Frame.next());
                 Assertions.assertTrue(iterator.hasNext());
                 Assertions.assertEquals(iterator.next(), rfc5424Frame.msg.toString());
@@ -464,7 +464,7 @@ public class KafkaConsumerTest {
                             "{\"topic\":\"testConsumerTopic\", \"partition\":2, \"offset\":" + 14 + "}",
                             recordOffset.offsetToJSON()
                     );
-            Assertions.assertNull(recordOffset.getRecord());
+            Assertions.assertNull(recordOffset.record());
             counter++;
 
             recordOffset = messages.get(1).get(counter);
@@ -473,7 +473,7 @@ public class KafkaConsumerTest {
                             "{\"topic\":\"testConsumerTopic\", \"partition\":2, \"offset\":" + 15 + "}",
                             recordOffset.offsetToJSON()
                     );
-            rfc5424Frame.load(new ByteArrayInputStream(recordOffset.getRecord()));
+            rfc5424Frame.load(new ByteArrayInputStream(recordOffset.record()));
             e = Assertions.assertThrows(ParseException.class, rfc5424Frame::next);
             Assertions.assertEquals("PRIORITY < missing", e.getMessage());
             counter++;
@@ -486,7 +486,7 @@ public class KafkaConsumerTest {
                                 "{\"topic\":\"testConsumerTopic\", \"partition\":0, \"offset\":" + i + "}",
                                 recordOffset.offsetToJSON()
                         );
-                rfc5424Frame.load(new ByteArrayInputStream(recordOffset.getRecord()));
+                rfc5424Frame.load(new ByteArrayInputStream(recordOffset.record()));
                 Assertions.assertTrue(rfc5424Frame.next());
                 Assertions.assertTrue(iterator.hasNext());
                 Assertions.assertEquals(iterator.next(), rfc5424Frame.msg.toString());
@@ -500,7 +500,7 @@ public class KafkaConsumerTest {
                             "{\"topic\":\"testConsumerTopic\", \"partition\":0, \"offset\":" + 14 + "}",
                             recordOffset.offsetToJSON()
                     );
-            Assertions.assertNull(recordOffset.getRecord());
+            Assertions.assertNull(recordOffset.record());
             counter++;
 
             recordOffset = messages.get(1).get(counter);
@@ -509,7 +509,7 @@ public class KafkaConsumerTest {
                             "{\"topic\":\"testConsumerTopic\", \"partition\":0, \"offset\":" + 15 + "}",
                             recordOffset.offsetToJSON()
                     );
-            rfc5424Frame.load(new ByteArrayInputStream(recordOffset.getRecord()));
+            rfc5424Frame.load(new ByteArrayInputStream(recordOffset.record()));
             e = Assertions.assertThrows(ParseException.class, rfc5424Frame::next);
             Assertions.assertEquals("PRIORITY < missing", e.getMessage());
             counter++;
@@ -612,7 +612,7 @@ public class KafkaConsumerTest {
                                             + "}",
                                     recordOffset.offsetToJSON()
                             );
-                    rfc5424Frame.load(new ByteArrayInputStream(recordOffset.getRecord()));
+                    rfc5424Frame.load(new ByteArrayInputStream(recordOffset.record()));
                     Assertions.assertTrue(rfc5424Frame.next());
                     Assertions.assertTrue(iterator.hasNext());
                     Assertions.assertEquals(iterator.next(), rfc5424Frame.msg.toString());
@@ -627,7 +627,7 @@ public class KafkaConsumerTest {
                                         + "}",
                                 recordOffset.offsetToJSON()
                         );
-                Assertions.assertNull(recordOffset.getRecord());
+                Assertions.assertNull(recordOffset.record());
                 counter++;
 
                 recordOffset = messages.get(0).get(counter);
@@ -637,7 +637,7 @@ public class KafkaConsumerTest {
                                         + "}",
                                 recordOffset.offsetToJSON()
                         );
-                rfc5424Frame.load(new ByteArrayInputStream(recordOffset.getRecord()));
+                rfc5424Frame.load(new ByteArrayInputStream(recordOffset.record()));
                 ParseException e = Assertions.assertThrows(ParseException.class, rfc5424Frame::next);
                 Assertions.assertEquals("PRIORITY < missing", e.getMessage());
                 counter++;

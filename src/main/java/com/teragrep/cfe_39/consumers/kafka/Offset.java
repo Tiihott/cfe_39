@@ -45,11 +45,17 @@
  */
 package com.teragrep.cfe_39.consumers.kafka;
 
+import com.teragrep.cfe_39.avro.SyslogRecord;
+
 public interface Offset {
 
     boolean isNull();
 
-    byte[] getRecord();
+    byte[] record();
+
+    long size();
 
     String offsetToJSON();
+
+    SyslogRecord toSyslogRecord();
 }

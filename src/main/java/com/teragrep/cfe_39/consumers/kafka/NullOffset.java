@@ -45,6 +45,8 @@
  */
 package com.teragrep.cfe_39.consumers.kafka;
 
+import com.teragrep.cfe_39.avro.SyslogRecord;
+
 // Null object design pattern, used to create null offset objects.
 public final class NullOffset implements Offset {
 
@@ -54,12 +56,22 @@ public final class NullOffset implements Offset {
     }
 
     @Override
-    public byte[] getRecord() {
+    public byte[] record() {
         return new byte[0];
+    }
+
+    @Override
+    public long size() {
+        return 0;
     }
 
     @Override
     public String offsetToJSON() {
         return "{\"topic\":\"Not available\", \"partition\":0, \"offset\":0}";
+    }
+
+    @Override
+    public SyslogRecord toSyslogRecord() {
+        return SyslogRecord.newBuilder().build();
     }
 }

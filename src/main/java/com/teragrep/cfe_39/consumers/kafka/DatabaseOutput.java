@@ -257,7 +257,7 @@ public class DatabaseOutput implements Consumer<List<RecordOffset>> {
                 }
             }
 
-            byte[] byteArray = recordOffsetObject.getRecord(); // loads the byte[] contained in recordOffsetObject.getRecord() to byteArray.
+            byte[] byteArray = recordOffsetObject.record(); // loads the byte[] contained in recordOffsetObject.getRecord() to byteArray.
             if (byteArray == null) {
                 if (skipEmptyRFC5424Records) {
                     if (LOGGER.isDebugEnabled()) {
