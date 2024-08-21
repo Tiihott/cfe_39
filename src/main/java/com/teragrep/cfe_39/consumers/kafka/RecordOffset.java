@@ -46,12 +46,10 @@
 package com.teragrep.cfe_39.consumers.kafka;
 
 import com.teragrep.cfe_39.avro.SyslogRecord;
-import com.teragrep.rlo_06.Fragment;
-import com.teragrep.rlo_06.RFC5424Frame;
-import com.teragrep.rlo_06.RFC5424Timestamp;
-import com.teragrep.rlo_06.SDVector;
+import com.teragrep.rlo_06.*;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -94,28 +92,29 @@ public final class RecordOffset implements Offset {
     }
 
     @Override
-    public SyslogRecord toSyslogRecord() {
+    public SyslogRecord toSyslogRecord() throws ParseException, IOException {
         RFC5424Frame rfc5424Frame = new RFC5424Frame(false);
         InputStream inputStream = new ByteArrayInputStream(record);
         rfc5424Frame.load(inputStream);
-
-        Instant instant = new RFC5424Timestamp(rfc5424Frame.timestamp).toZonedDateTime().toInstant();
-        long MICROS_PER_SECOND = 1000L * 1000L;
-        long NANOS_PER_MICROS = 1000L;
-        long sec = Math.multiplyExact(instant.getEpochSecond(), MICROS_PER_SECOND);
-        long epochMicros = Math.addExact(sec, instant.getNano() / NANOS_PER_MICROS);
-
-        // input
-        final byte[] source = eventToSource(rfc5424Frame);
-
-        // origin
-        final byte[] origin = eventToOrigin(rfc5424Frame);
-
-        return SyslogRecord
-                .newBuilder()
-                .setTimestamp(epochMicros)
-                .setPayload(rfc5424Frame.msg.toString())
-                .setDirectory(rfc5424Frame.structuredData.getValue(new SDVector("teragrep@48577", "directory")).toString()).setStream(rfc5424Frame.structuredData.getValue(new SDVector("teragrep@48577", "streamname")).toString()).setHost(rfc5424Frame.hostname.toString()).setInput(new String(source, StandardCharsets.UTF_8)).setPartition(String.valueOf(partition)).setOffset(offset).setOrigin(new String(origin, StandardCharsets.UTF_8)).build();
+        if (rfc5424Frame.next()) {
+            Instant instant = new RFC5424Timestamp(rfc5424Frame.timestamp).toZonedDateTime().toInstant();
+            long MICROS_PER_SECOND = 1000L * 1000L;
+            long NANOS_PER_MICROS = 1000L;
+            long sec = Math.multiplyExact(instant.getEpochSecond(), MICROS_PER_SECOND);
+            long epochMicros = Math.addExact(sec, instant.getNano() / NANOS_PER_MICROS);
+            // input
+            final byte[] source = eventToSource(rfc5424Frame);
+            // origin
+            final byte[] origin = eventToOrigin(rfc5424Frame);
+            return SyslogRecord
+                    .newBuilder()
+                    .setTimestamp(epochMicros)
+                    .setPayload(rfc5424Frame.msg.toString())
+                    .setDirectory(rfc5424Frame.structuredData.getValue(new SDVector("teragrep@48577", "directory")).toString()).setStream(rfc5424Frame.structuredData.getValue(new SDVector("teragrep@48577", "streamname")).toString()).setHost(rfc5424Frame.hostname.toString()).setInput(new String(source, StandardCharsets.UTF_8)).setPartition(String.valueOf(partition)).setOffset(offset).setOrigin(new String(origin, StandardCharsets.UTF_8)).build();
+        }
+        else {
+            return SyslogRecord.newBuilder().build();
+        }
     }
 
     private byte[] eventToOrigin(RFC5424Frame rfc5424Frame) {

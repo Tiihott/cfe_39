@@ -47,6 +47,8 @@ package com.teragrep.cfe_39.consumers.kafka;
 
 import com.teragrep.cfe_39.avro.SyslogRecord;
 
+import java.io.IOException;
+
 public interface Offset {
 
     boolean isNull();
@@ -57,5 +59,5 @@ public interface Offset {
 
     String offsetToJSON();
 
-    SyslogRecord toSyslogRecord();
+    SyslogRecord toSyslogRecord() throws IOException;
 }
