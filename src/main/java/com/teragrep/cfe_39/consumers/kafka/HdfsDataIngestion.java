@@ -212,7 +212,7 @@ public class HdfsDataIngestion {
          Consumer group is also handled here, and each consumer of the group runs on separate thread.*/
         int numOfThreads = Math.min(numOfConsumers, listPartitionInfo.size()); // Makes sure that there aren't more consumers than available partitions in the consumer group.
         for (int threadId = 1; numOfThreads >= threadId; threadId++) {
-            Consumer<List<RecordOffset>> output = new DatabaseOutput(
+            Consumer<List<KafkaRecordImpl>> output = new DatabaseOutput(
                     config, // Configuration settings
                     topic, // String, the name of the topic
                     durationStatistics, // RuntimeStatistics object from metrics

@@ -46,7 +46,7 @@
 package com.teragrep.cfe_39;
 
 import com.teragrep.cfe_39.consumers.kafka.DatabaseOutput;
-import com.teragrep.cfe_39.consumers.kafka.RecordOffset;
+import com.teragrep.cfe_39.consumers.kafka.KafkaRecordImpl;
 import com.teragrep.cfe_39.metrics.DurationStatistics;
 import com.teragrep.cfe_39.metrics.topic.TopicCounter;
 import org.apache.hadoop.fs.FileSystem;
@@ -117,7 +117,7 @@ public class ProcessingFailureTest {
 
         assertDoesNotThrow(() -> {
 
-            Consumer<List<RecordOffset>> output = new DatabaseOutput(
+            Consumer<List<KafkaRecordImpl>> output = new DatabaseOutput(
                     config, // Configuration settings
                     "topicName", // String, the name of the topic
                     durationStatistics, // RuntimeStatistics object from metrics
@@ -132,14 +132,14 @@ public class ProcessingFailureTest {
                     "12>1 2022-04-25T07:34:50.806Z jla-02.default jla02logger - - [origin@48577 hostname=\"jla-02.default\"][event_id@48577 hostname=\"jla-02.default\" uuid=\"c3f13f9a-05e2-41bd-b0ad-1eca6fd6fd9a\" source=\"source\" unixtime=\"1650872090806\"][event_format@48577 original_format=\"rfc5424\"][event_node_relay@48577 hostname=\"cfe-06-0.cfe-06.default\" source=\"kafka-4.kafka.default.svc.cluster.local\" source_module=\"imrelp\"][event_version@48577 major=\"2\" minor=\"2\" hostname=\"cfe-06-0.cfe-06.default\" version_source=\"relay\"][event_node_router@48577 source=\"cfe-06-0.cfe-06.default.svc.cluster.local\" source_module=\"imrelp\" hostname=\"cfe-07-0.cfe-07.default\"][teragrep@48577 streamname=\"test:jla02logger:0\" directory=\"jla02logger\" unixtime=\"1650872090\"] [ERROR] 2022-04-25 07:34:50,806 com.teragrep.jla_02.Log4j Log - Log4j error says hi!"
                             .getBytes(StandardCharsets.UTF_8)
             );
-            RecordOffset recordOffsetObject = new RecordOffset(
+            KafkaRecordImpl recordOffsetObject = new KafkaRecordImpl(
                     record.topic(),
                     record.partition(),
                     record.offset(),
                     record.value()
             );
 
-            List<RecordOffset> recordOffsetObjectList = new ArrayList<>();
+            List<KafkaRecordImpl> recordOffsetObjectList = new ArrayList<>();
             recordOffsetObjectList.add(recordOffsetObject);
             Exception e = Assertions.assertThrows(Exception.class, () -> output.accept(recordOffsetObjectList));
             Assertions.assertEquals("com.teragrep.rlo_06.PriorityParseException: PRIORITY < missing", e.getMessage());
@@ -160,7 +160,7 @@ public class ProcessingFailureTest {
 
         assertDoesNotThrow(() -> {
 
-            Consumer<List<RecordOffset>> output = new DatabaseOutput(
+            Consumer<List<KafkaRecordImpl>> output = new DatabaseOutput(
                     config, // Configuration settings
                     "topicName", // String, the name of the topic
                     durationStatistics, // RuntimeStatistics object from metrics
@@ -174,18 +174,22 @@ public class ProcessingFailureTest {
                     "2022-04-25T07:34:50.806Z".getBytes(StandardCharsets.UTF_8),
                     null
             );
-            RecordOffset recordOffsetObject = new RecordOffset(
+            KafkaRecordImpl recordOffsetObject = new KafkaRecordImpl(
                     record.topic(),
                     record.partition(),
                     record.offset(),
                     record.value()
             );
 
-            List<RecordOffset> recordOffsetObjectList = new ArrayList<>();
+            List<KafkaRecordImpl> recordOffsetObjectList = new ArrayList<>();
             recordOffsetObjectList.add(recordOffsetObject);
-            NullPointerException e = Assertions
-                    .assertThrows(NullPointerException.class, () -> output.accept(recordOffsetObjectList));
-            Assertions.assertEquals("Record with null content detected during processing.", e.getMessage());
+            RuntimeException e = Assertions
+                    .assertThrows(RuntimeException.class, () -> output.accept(recordOffsetObjectList));
+            Assertions
+                    .assertEquals(
+                            "java.lang.NullPointerException: Cannot read the array length because \"buf\" is null",
+                            e.getMessage()
+                    );
             Assertions.assertFalse(fs.exists(new Path(config.getHdfsPath() + "/" + "topicName" + "/" + "0.1")));
             // No files stored to hdfs.
         });

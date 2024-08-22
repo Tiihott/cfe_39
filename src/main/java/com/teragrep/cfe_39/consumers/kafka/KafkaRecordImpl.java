@@ -46,18 +46,51 @@
 package com.teragrep.cfe_39.consumers.kafka;
 
 import com.teragrep.cfe_39.avro.SyslogRecord;
+import com.teragrep.rlo_06.*;
 
-import java.io.IOException;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 
-public interface Offset {
+// This is the class for handling the Kafka record topic/partition/offset data that are required for HDFS storage.
+public final class KafkaRecordImpl implements KafkaRecord {
 
-    boolean isNull();
+    private final String topic;
+    private final int partition;
+    private final long offset;
+    private final byte[] record;
 
-    byte[] record();
+    public KafkaRecordImpl(String topic, int partition, long offset, byte[] record) {
+        this.topic = topic;
+        this.partition = partition;
+        this.offset = offset;
+        this.record = record;
+    }
 
-    long size();
+    @Override
+    public boolean isNull() {
+        return false;
+    }
 
-    String offsetToJSON();
+    @Override
+    public byte[] record() {
+        return record;
+    }
 
-    SyslogRecord toSyslogRecord() throws IOException;
+    @Override
+    public long size() {
+        return record.length;
+    }
+
+    @Override
+    public String offsetToJSON() {
+        return String
+                .format("{\"topic\":\"%s\", \"partition\":%d, \"offset\":%d}", this.topic, this.partition, this.offset);
+    }
+
+    @Override
+    public SyslogRecord toSyslogRecord() {
+        InputStream inputStream = new ByteArrayInputStream(record);
+        return new KafkaRecordConverter().convert(inputStream, String.valueOf(partition), offset);
+    }
+
 }

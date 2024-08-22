@@ -45,7 +45,6 @@
  */
 package com.teragrep.cfe_39.consumers.kafka;
 
-import com.google.gson.JsonObject;
 import com.teragrep.cfe_39.Config;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
@@ -68,7 +67,7 @@ public class HDFSWrite implements AutoCloseable {
     private final HdfsConfiguration conf;
     private final String hdfsuri;
 
-    public HDFSWrite(Config config, JsonObject lastObjectJo) throws IOException {
+    public HDFSWrite(Config config, String topic, String partition, long offset) throws IOException {
 
         Properties readerKafkaProperties = config.getKafkaConsumerProperties();
         this.useMockKafkaConsumer = Boolean
@@ -81,8 +80,8 @@ public class HDFSWrite implements AutoCloseable {
             /* The filepath should be something like hdfs:///opt/teragrep/cfe_39/srv/topic_name/0.12345 where 12345 is offset and 0 the partition.
              In other words the directory named topic_name holds files that are named and arranged based on partition and the partition's offset. Every partition has its own set of unique offset values.
              These values should be fetched from config and other input parameters (topic+partition+offset).*/
-            path = config.getHdfsPath() + "/" + lastObjectJo.get("topic").getAsString();
-            fileName = lastObjectJo.get("partition").getAsString() + "." + lastObjectJo.get("offset").getAsString(); // filename should be constructed from partition and offset.
+            path = config.getHdfsPath() + "/" + topic;
+            fileName = partition + "." + offset; // filename should be constructed from partition and offset.
 
             // ====== Init HDFS File System Object
             conf = new HdfsConfiguration();
@@ -107,8 +106,8 @@ public class HDFSWrite implements AutoCloseable {
             // Code for initializing the class for kerberized HDFS database usage.
             hdfsuri = config.getHdfsuri();
 
-            path = config.getHdfsPath() + "/" + lastObjectJo.get("topic").getAsString();
-            fileName = lastObjectJo.get("partition").getAsString() + "." + lastObjectJo.get("offset").getAsString();
+            path = config.getHdfsPath() + "/" + topic;
+            fileName = partition + "." + offset;
 
             // set kerberos host and realm
             System.setProperty("java.security.krb5.realm", config.getKerberosRealm());
@@ -174,7 +173,6 @@ public class HDFSWrite implements AutoCloseable {
             Path path = new Path(syslogFile.getPath());
             fs.copyFromLocalFile(path, hdfswritepath);
             LOGGER.debug("End Write file into hdfs");
-            boolean delete = syslogFile.delete(); // deletes the avro-file from the local disk now that it has been committed to HDFS.
             LOGGER.info("\nFile committed to HDFS, file writepath should be: <{}>\n", hdfswritepath);
 
         }

@@ -46,59 +46,16 @@
 package com.teragrep.cfe_39.consumers.kafka;
 
 import com.teragrep.cfe_39.avro.SyslogRecord;
-import org.apache.avro.file.CodecFactory;
-import org.apache.avro.file.DataFileWriter;
-import org.apache.avro.file.SeekableFileInput;
-import org.apache.avro.file.SyncableFileOutputStream;
-import org.apache.avro.io.DatumWriter;
-import org.apache.avro.specific.SpecificDatumWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.*;
+public interface KafkaRecord {
 
-public class SyslogAvroWriter implements AutoCloseable {
+    boolean isNull();
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SyslogAvroWriter.class);
+    byte[] record();
 
-    private final DatumWriter<SyslogRecord> datumWriter = new SpecificDatumWriter<>(SyslogRecord.class);
+    long size();
 
-    private final SyncableFileOutputStream syncableFileOutputStream;
+    String offsetToJSON();
 
-    private final DataFileWriter<SyslogRecord> dataFileWriter = new DataFileWriter<>(datumWriter);
-
-    public SyslogAvroWriter(File syslogFile) throws IOException {
-        dataFileWriter.setCodec(CodecFactory.snappyCodec());
-
-        syncableFileOutputStream = new SyncableFileOutputStream(syslogFile);
-
-        syncableFileOutputStream.getChannel().tryLock();
-
-        if (syslogFile.length() == 0) {
-            // new file
-            dataFileWriter.create(SyslogRecord.getClassSchema(), syncableFileOutputStream);
-        }
-        else {
-            // existing file
-            SeekableFileInput seekableFileInput = new SeekableFileInput(syslogFile);
-
-            // seek to end
-            syncableFileOutputStream.getChannel().position(syncableFileOutputStream.getChannel().size());
-            dataFileWriter.appendTo(seekableFileInput, syncableFileOutputStream);
-        }
-    }
-
-    public void write(SyslogRecord syslogRecord) throws IOException {
-        dataFileWriter.append(syslogRecord);
-        dataFileWriter.flush();
-        // getFileSize() doesn't work properly if dataFileWriter.flush() is not called after appending a new record to the AVRO-file.
-    }
-
-    public void close() throws IOException {
-        dataFileWriter.close();
-    }
-
-    public long fileSize() throws IOException {
-        return syncableFileOutputStream.getChannel().size();
-    }
+    SyslogRecord toSyslogRecord();
 }

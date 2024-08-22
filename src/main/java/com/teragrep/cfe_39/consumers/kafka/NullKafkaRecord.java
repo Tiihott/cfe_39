@@ -48,7 +48,7 @@ package com.teragrep.cfe_39.consumers.kafka;
 import com.teragrep.cfe_39.avro.SyslogRecord;
 
 // Null object design pattern, used to create null offset objects.
-public final class NullOffset implements Offset {
+public final class NullKafkaRecord implements KafkaRecord {
 
     @Override
     public boolean isNull() {

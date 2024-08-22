@@ -46,7 +46,7 @@
 package com.teragrep.cfe_39;
 
 import com.teragrep.cfe_39.consumers.kafka.ReadCoordinator;
-import com.teragrep.cfe_39.consumers.kafka.RecordOffset;
+import com.teragrep.cfe_39.consumers.kafka.KafkaRecordImpl;
 import com.teragrep.rlo_06.ParseException;
 import com.teragrep.rlo_06.RFC5424Frame;
 import org.apache.kafka.common.TopicPartition;
@@ -73,8 +73,8 @@ public class KafkaConsumerTest {
                     .setProperty("cfe_39.config.location", System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
             Config config = new Config();
             Map<TopicPartition, Long> hdfsStartOffsets = new HashMap<>();
-            ArrayList<List<RecordOffset>> messages = new ArrayList<>();
-            Consumer<List<RecordOffset>> output = message -> messages.add(message);
+            ArrayList<List<KafkaRecordImpl>> messages = new ArrayList<>();
+            Consumer<List<KafkaRecordImpl>> output = message -> messages.add(message);
 
             ReadCoordinator readCoordinator = new ReadCoordinator(
                     "testConsumerTopic",
@@ -148,7 +148,7 @@ public class KafkaConsumerTest {
 
             RFC5424Frame rfc5424Frame = new RFC5424Frame(false);
 
-            RecordOffset recordOffset;
+            KafkaRecordImpl recordOffset;
 
             Iterator<String> iterator = messageList.iterator();
             int counter = 0;
@@ -527,8 +527,8 @@ public class KafkaConsumerTest {
                     .setProperty("cfe_39.config.location", System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
             Config config = new Config();
             Map<TopicPartition, Long> hdfsStartOffsets = new HashMap<>();
-            ArrayList<List<RecordOffset>> messages = new ArrayList<>();
-            Consumer<List<RecordOffset>> output = message -> messages.add(message);
+            ArrayList<List<KafkaRecordImpl>> messages = new ArrayList<>();
+            Consumer<List<KafkaRecordImpl>> output = message -> messages.add(message);
 
             ReadCoordinator readCoordinator = new ReadCoordinator(
                     "testConsumerTopic",
@@ -588,7 +588,7 @@ public class KafkaConsumerTest {
                     );
 
             RFC5424Frame rfc5424Frame = new RFC5424Frame(false);
-            RecordOffset recordOffset;
+            KafkaRecordImpl recordOffset;
             Iterator<String> iterator;
             List<Integer> partitionList = new ArrayList<Integer>();
             partitionList.add(7);

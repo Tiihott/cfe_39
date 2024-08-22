@@ -58,11 +58,11 @@ public class KafkaReader implements AutoCloseable {
     final Logger LOGGER = LoggerFactory.getLogger(KafkaReader.class);
     private Iterator<ConsumerRecord<byte[], byte[]>> kafkaRecordsIterator = Collections.emptyIterator();
     private final Consumer<byte[], byte[]> kafkaConsumer;
-    private final java.util.function.Consumer<List<RecordOffset>> callbackFunction;
+    private final java.util.function.Consumer<List<KafkaRecordImpl>> callbackFunction;
 
     public KafkaReader(
             Consumer<byte[], byte[]> kafkaConsumer,
-            java.util.function.Consumer<List<RecordOffset>> callbackFunction
+            java.util.function.Consumer<List<KafkaRecordImpl>> callbackFunction
     ) {
         this.kafkaConsumer = kafkaConsumer;
         this.callbackFunction = callbackFunction;
@@ -79,19 +79,19 @@ public class KafkaReader implements AutoCloseable {
             kafkaRecordsIterator = kafkaRecords.iterator();
         }
 
-        List<RecordOffset> recordOffsetObjectList = new ArrayList<>();
+        List<KafkaRecordImpl> recordOffsetObjectList = new ArrayList<>();
         while (kafkaRecordsIterator.hasNext()) {
             ConsumerRecord<byte[], byte[]> record = kafkaRecordsIterator.next();
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("adding from offset: <{}>", record.offset());
             }
             recordOffsetObjectList
-                    .add(new RecordOffset(record.topic(), record.partition(), record.offset(), record.value()));
+                    .add(new KafkaRecordImpl(record.topic(), record.partition(), record.offset(), record.value()));
         }
 
         if (!recordOffsetObjectList.isEmpty()) {
             /* This is the DatabaseOutput.accept() function.
-             Offset and other required data for HDFS storage are added to the input parameters of the accept() function which processes the consumed record.*/
+             KafkaRecord and other required data for HDFS storage are added to the input parameters of the accept() function which processes the consumed record.*/
             callbackFunction.accept(recordOffsetObjectList);
             kafkaConsumer.commitSync();
         }

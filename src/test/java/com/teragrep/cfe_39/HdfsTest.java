@@ -115,7 +115,7 @@ public class HdfsTest {
             JsonObject recordOffsetJo = JsonParser
                     .parseString("{\"topic\":\"testConsumerTopic\", \"partition\":0, \"offset\":9}")
                     .getAsJsonObject();
-            try (HDFSWrite writer = new HDFSWrite(config, recordOffsetJo)) {
+            try (HDFSWrite writer = new HDFSWrite(config, "testConsumerTopic", "0", 9)) {
                 writer.commit(avroFile); // commits avroFile to HDFS and deletes avroFile afterward.
             }
             Assertions.assertFalse(targetFile.toFile().exists());
@@ -133,7 +133,7 @@ public class HdfsTest {
             recordOffsetJo = JsonParser
                     .parseString("{\"topic\":\"testConsumerTopic\", \"partition\":0, \"offset\":13}")
                     .getAsJsonObject();
-            try (HDFSWrite writer = new HDFSWrite(config, recordOffsetJo)) {
+            try (HDFSWrite writer = new HDFSWrite(config, "testConsumerTopic", "0", 13)) {
                 writer.commit(avroFile); // commits avroFile to HDFS and deletes avroFile afterward.
             }
             Assertions.assertFalse(targetFile.toFile().exists());
@@ -163,7 +163,7 @@ public class HdfsTest {
             JsonObject recordOffsetJo = JsonParser
                     .parseString("{\"topic\":\"testConsumerTopic\", \"partition\":0, \"offset\":9}")
                     .getAsJsonObject();
-            try (HDFSWrite writer = new HDFSWrite(config, recordOffsetJo)) {
+            try (HDFSWrite writer = new HDFSWrite(config, "testConsumerTopic", "0", 9)) {
                 writer.commit(avroFile); // commits avroFile to HDFS and deletes avroFile afterward.
             }
             Assertions.assertFalse(targetFile.toFile().exists());
@@ -177,7 +177,7 @@ public class HdfsTest {
             recordOffsetJo = JsonParser
                     .parseString("{\"topic\":\"testConsumerTopic\", \"partition\":0, \"offset\":9}")
                     .getAsJsonObject();
-            HDFSWrite writer = new HDFSWrite(config, recordOffsetJo);
+            HDFSWrite writer = new HDFSWrite(config, "testConsumerTopic", "0", 9);
             File finalAvroFile = avroFile;
             Exception e = Assertions.assertThrows(Exception.class, () -> writer.commit(finalAvroFile));
             Assertions.assertEquals("File 0.9 already exists", e.getMessage());

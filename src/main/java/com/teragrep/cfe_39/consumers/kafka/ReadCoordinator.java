@@ -60,14 +60,14 @@ public class ReadCoordinator implements Runnable {
 
     private final String queueTopic;
     private final Properties readerKafkaProperties;
-    private final Consumer<List<RecordOffset>> callbackFunction;
+    private final Consumer<List<KafkaRecordImpl>> callbackFunction;
     private boolean run = true;
     private final Map<TopicPartition, Long> hdfsStartOffsets;
 
     public ReadCoordinator(
             String queueTopic,
             Properties readerKafkaProperties,
-            Consumer<List<RecordOffset>> callbackFunction,
+            Consumer<List<KafkaRecordImpl>> callbackFunction,
             Map<TopicPartition, Long> hdfsStartOffsets
     ) {
         this.queueTopic = queueTopic;
@@ -79,7 +79,7 @@ public class ReadCoordinator implements Runnable {
     private KafkaReader createKafkaReader(
             Properties readerKafkaProperties,
             String topic,
-            Consumer<List<RecordOffset>> callbackFunction,
+            Consumer<List<KafkaRecordImpl>> callbackFunction,
             boolean useMockKafkaConsumer
     ) {
 

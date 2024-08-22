@@ -65,7 +65,7 @@ public class WritableQueue {
     private static final Logger LOGGER = LoggerFactory.getLogger(WritableQueue.class);
 
     private final Path queueDirectory;
-    private String queueNamePrefix;
+    private final String queueNamePrefix;
 
     public WritableQueue(String queueDirectory, String queueNamePrefix) {
         this.queueDirectory = Paths.get(queueDirectory);
@@ -106,10 +106,6 @@ public class WritableQueue {
         else {
             return getNextWritableFilename();
         }
-    }
-
-    public void setQueueNamePrefix(String queueNamePrefix) {
-        this.queueNamePrefix = queueNamePrefix;
     }
 
     private BiPredicate<Path, BasicFileAttributes> getFileMatcher(String queueNamePrefix) {
