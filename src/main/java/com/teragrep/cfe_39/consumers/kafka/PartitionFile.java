@@ -45,6 +45,8 @@
  */
 package com.teragrep.cfe_39.consumers.kafka;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.teragrep.cfe_39.Config;
 import com.teragrep.cfe_39.avro.SyslogRecord;
 import com.teragrep.cfe_39.consumers.kafka.queue.WritableQueue;
@@ -72,7 +74,6 @@ public class PartitionFile {
     PartitionFile(Config config, String topic, String partition) throws IOException {
         this.writableQueue = new WritableQueue(config.getQueueDirectory(), topic + partition);
         this.syslogFile = writableQueue.getNextWritableFile();
-        // FIXME: Because avro writer can't delete content the file must be remade from scratch with a new SyslogAvroWriter object.
         this.kafkaRecordList = new ArrayList<>();
         this.config = config;
         this.topic = topic;
@@ -88,7 +89,7 @@ public class PartitionFile {
         long storedOffset = 0;
         while (kafkaRecordListIterator.hasNext()) {
             KafkaRecordImpl next = kafkaRecordListIterator.next();
-            SyslogRecord syslogRecord = null; // FIXME: NO NULLS
+            SyslogRecord syslogRecord;
             try {
                 syslogRecord = next.toSyslogRecord();
             }
@@ -99,6 +100,11 @@ public class PartitionFile {
                                     "Skipping parsing a non RFC5424 record, record metadata: <{}>. Exception information: ",
                                     next.offsetToJSON(), e
                             );
+                    JsonObject recordOffset = JsonParser.parseString(next.offsetToJSON()).getAsJsonObject();
+                    if (recordOffset.get("offset").getAsLong() > storedOffset) {
+                        storedOffset = recordOffset.get("offset").getAsLong();
+                    }
+                    continue;
                 }
                 else {
                     LOGGER.error("Failed to parse RFC5424 record <{}>", next.offsetToJSON());
@@ -112,6 +118,11 @@ public class PartitionFile {
                                     "Skipping parsing an empty RFC5424 record, record metadata: <{}>. Exception information: ",
                                     next.offsetToJSON(), e
                             );
+                    JsonObject recordOffset = JsonParser.parseString(next.offsetToJSON()).getAsJsonObject();
+                    if (recordOffset.get("offset").getAsLong() > storedOffset) {
+                        storedOffset = recordOffset.get("offset").getAsLong();
+                    }
+                    continue;
                 }
                 else {
                     LOGGER.error("Failed to parse RFC5424 record <{}> because of null content", next.offsetToJSON());
@@ -124,10 +135,13 @@ public class PartitionFile {
             if (config.getMaximumFileSize() < (syslogFileCapacity + syslogRecordCapacity)) {
                 writeToHdfs(topic, partition, storedOffset);
             }
+            // SyslogAvroWriter initialization will re-initialize the syslogFile if it has been deleted because of writeToHdfs().
             try (SyslogAvroWriter syslogAvroWriter = new SyslogAvroWriter(syslogFile)) {
                 syslogAvroWriter.write(syslogRecord);
             }
-            storedOffset = syslogRecord.getOffset();
+            if (syslogRecord.getOffset() > storedOffset) {
+                storedOffset = syslogRecord.getOffset();
+            }
         }
         // Clear the kafkaRecordList from successfully committed records.
         kafkaRecordList.clear();
@@ -136,10 +150,9 @@ public class PartitionFile {
     // Writes the file to hdfs and initializes new file.
     public void writeToHdfs(String topic, String partition, long offset) throws IOException {
         try (HDFSWrite writer = new HDFSWrite(config, topic, partition, offset)) {
-            //syslogAvroWriter.close();
             writer.commit(syslogFile); // commits the final AVRO-file to HDFS.
         }
-        // FIXME: Must re-initialize the avro-file as an empty file.
+        syslogFile.delete(); // Deletes the file as all the contents have been stored to HDFS.
     }
 
 }

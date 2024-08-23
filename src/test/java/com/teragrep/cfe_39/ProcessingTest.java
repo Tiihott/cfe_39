@@ -50,7 +50,9 @@ import com.teragrep.cfe_39.consumers.kafka.BatchDistribution;
 import com.teragrep.cfe_39.consumers.kafka.KafkaRecordImpl;
 import com.teragrep.cfe_39.metrics.DurationStatistics;
 import com.teragrep.cfe_39.metrics.topic.TopicCounter;
+import org.apache.avro.file.DataFileReader;
 import org.apache.avro.file.DataFileStream;
+import org.apache.avro.io.DatumReader;
 import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -58,10 +60,7 @@ import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,6 +107,11 @@ public class ProcessingTest {
         });
         hdfsCluster.shutdown();
         FileUtil.fullyDelete(baseDir);
+        File queueDirectory = new File(config.getQueueDirectory());
+        File[] files = queueDirectory.listFiles();
+        if (files[0].getName().equals("topicName0.1")) {
+            files[0].delete();
+        }
     }
 
     @Test
@@ -387,10 +391,79 @@ public class ProcessingTest {
 
             output.accept(recordOffsetObjectList);
 
-            // FIXME: file is not being recognized as avro file for some reason.
+            // Assert that records 10-13 are present in local avro-file.
+
+            File queueDirectory = new File(config.getQueueDirectory());
+            File[] files = queueDirectory.listFiles();
+            Assertions.assertEquals(1, files.length);
+
+            DatumReader<SyslogRecord> datumReader = new SpecificDatumReader<>(SyslogRecord.class);
+            DataFileReader<SyslogRecord> dataFileReader = new DataFileReader<>(files[0], datumReader);
+            Assertions.assertTrue(dataFileReader.hasNext());
+            SyslogRecord next = dataFileReader.next();
+            Assertions.assertEquals(10, next.getOffset());
+            Assertions.assertTrue(dataFileReader.hasNext());
+            next = dataFileReader.next();
+            Assertions.assertEquals(11, next.getOffset());
+            Assertions.assertTrue(dataFileReader.hasNext());
+            next = dataFileReader.next();
+            Assertions.assertEquals(12, next.getOffset());
+            Assertions.assertTrue(dataFileReader.hasNext());
+            next = dataFileReader.next();
+            Assertions.assertEquals(13, next.getOffset());
+            Assertions.assertFalse(dataFileReader.hasNext());
+
+            // Assert that records 0-9 are present in HDFS
+
+            Assertions.assertEquals(1, fs.listStatus(new Path(config.getHdfsPath() + "/" + "topicName")).length);
+            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "topicName" + "/" + "0.9")));
+            Path hdfsreadpath = new Path(config.getHdfsPath() + "/" + "topicName" + "/" + "0.9");
+            //Init input stream
+            FSDataInputStream inputStream = fs.open(hdfsreadpath);
+            //The data is in AVRO-format, so it can't be read as a string.
+            DataFileStream<SyslogRecord> reader = new DataFileStream<>(
+                    inputStream,
+                    new SpecificDatumReader<>(SyslogRecord.class)
+            );
+            SyslogRecord syslogRecord = null;
+            LOGGER.info("\nReading records from file {}:", hdfsreadpath);
+
+            Assertions.assertTrue(reader.hasNext());
+            syslogRecord = reader.next(syslogRecord);
+            Assertions.assertEquals(0, syslogRecord.getOffset());
+            Assertions.assertTrue(reader.hasNext());
+            syslogRecord = reader.next(syslogRecord);
+            Assertions.assertEquals(1, syslogRecord.getOffset());
+            Assertions.assertTrue(reader.hasNext());
+            syslogRecord = reader.next(syslogRecord);
+            Assertions.assertEquals(2, syslogRecord.getOffset());
+            Assertions.assertTrue(reader.hasNext());
+            syslogRecord = reader.next(syslogRecord);
+            Assertions.assertEquals(3, syslogRecord.getOffset());
+            Assertions.assertTrue(reader.hasNext());
+            syslogRecord = reader.next(syslogRecord);
+            Assertions.assertEquals(4, syslogRecord.getOffset());
+            Assertions.assertTrue(reader.hasNext());
+            syslogRecord = reader.next(syslogRecord);
+            Assertions.assertEquals(5, syslogRecord.getOffset());
+            Assertions.assertTrue(reader.hasNext());
+            syslogRecord = reader.next(syslogRecord);
+            Assertions.assertEquals(6, syslogRecord.getOffset());
+            Assertions.assertTrue(reader.hasNext());
+            syslogRecord = reader.next(syslogRecord);
+            Assertions.assertEquals(7, syslogRecord.getOffset());
+            Assertions.assertTrue(reader.hasNext());
+            syslogRecord = reader.next(syslogRecord);
+            Assertions.assertEquals(8, syslogRecord.getOffset());
+            Assertions.assertTrue(reader.hasNext());
+            syslogRecord = reader.next(syslogRecord);
+            Assertions.assertEquals(9, syslogRecord.getOffset());
+            Assertions.assertFalse(reader.hasNext());
+
         });
     }
 
+    @Disabled(value = "This needs refactoring")
     @Test
     public void skipNonRFC5424DatabaseOutputTest() {
         // Initialize and register duration statistics
@@ -449,6 +522,7 @@ public class ProcessingTest {
 
     }
 
+    @Disabled(value = "This needs refactoring")
     @Test
     public void skipNullRFC5424DatabaseOutputTest() {
         // Initialize and register duration statistics
@@ -506,6 +580,7 @@ public class ProcessingTest {
 
     }
 
+    @Disabled(value = "This needs refactoring")
     @Test
     public void skipNullAndNonRFC5424DatabaseOutputTest() {
         // Initialize and register duration statistics

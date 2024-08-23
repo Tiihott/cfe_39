@@ -64,14 +64,12 @@ public class SyslogAvroWriter implements AutoCloseable {
     private final DatumWriter<SyslogRecord> datumWriter;
     private final SyncableFileOutputStream syncableFileOutputStream;
     private final DataFileWriter<SyslogRecord> dataFileWriter;
-    private final File syslogFile;
 
     public SyslogAvroWriter(File syslogFile) throws IOException {
-        this.syslogFile = syslogFile;
         datumWriter = new SpecificDatumWriter<>(SyslogRecord.class);
         dataFileWriter = new DataFileWriter<>(datumWriter);
         dataFileWriter.setCodec(CodecFactory.snappyCodec());
-        syncableFileOutputStream = new SyncableFileOutputStream(syslogFile);
+        syncableFileOutputStream = new SyncableFileOutputStream(syslogFile, true);
         syncableFileOutputStream.getChannel().tryLock();
         if (syslogFile.length() == 0) {
             // new file
