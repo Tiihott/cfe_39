@@ -48,6 +48,9 @@ package com.teragrep.cfe_39.consumers.kafka;
 import com.teragrep.cfe_39.Config;
 import com.teragrep.cfe_39.avro.SyslogRecord;
 import com.teragrep.cfe_39.consumers.kafka.queue.WritableQueue;
+import com.teragrep.rlo_06.ParseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -57,53 +60,86 @@ import java.util.ListIterator;
 
 public class PartitionFile {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(PartitionFile.class);
+
     private final String topic;
     private final String partition;
     private final Config config;
     private final WritableQueue writableQueue;
     private final File syslogFile;
-    private final SyslogAvroWriter syslogAvroWriter;
-    private final List<SyslogRecord> syslogRecordList;
+    private final List<KafkaRecordImpl> kafkaRecordList;
 
     PartitionFile(Config config, String topic, String partition) throws IOException {
         this.writableQueue = new WritableQueue(config.getQueueDirectory(), topic + partition);
         this.syslogFile = writableQueue.getNextWritableFile();
-        this.syslogAvroWriter = new SyslogAvroWriter(syslogFile);
-        this.syslogRecordList = new ArrayList<>();
+        // FIXME: Because avro writer can't delete content the file must be remade from scratch with a new SyslogAvroWriter object.
+        this.kafkaRecordList = new ArrayList<>();
         this.config = config;
         this.topic = topic;
         this.partition = partition;
     }
 
-    public void addRecord(SyslogRecord syslogRecord) {
-        syslogRecordList.add(syslogRecord);
+    public void addRecord(KafkaRecordImpl kafkaRecord) {
+        kafkaRecordList.add(kafkaRecord);
     }
 
     public void commitRecords() throws IOException {
-        ListIterator<SyslogRecord> syslogRecordListIterator = syslogRecordList.listIterator();
+        ListIterator<KafkaRecordImpl> kafkaRecordListIterator = kafkaRecordList.listIterator();
         long storedOffset = 0;
-        while (syslogRecordListIterator.hasNext()) {
-            SyslogRecord next = syslogRecordListIterator.next();
-            long syslogRecordCapacity = next.toByteBuffer().capacity();
-            long syslogFileCapacity = syslogAvroWriter.fileSize();
+        while (kafkaRecordListIterator.hasNext()) {
+            KafkaRecordImpl next = kafkaRecordListIterator.next();
+            SyslogRecord syslogRecord = null; // FIXME: NO NULLS
+            try {
+                syslogRecord = next.toSyslogRecord();
+            }
+            catch (ParseException e) {
+                if (config.getSkipNonRFC5424Records()) {
+                    LOGGER
+                            .warn(
+                                    "Skipping parsing a non RFC5424 record, record metadata: <{}>. Exception information: ",
+                                    next.offsetToJSON(), e
+                            );
+                }
+                else {
+                    LOGGER.error("Failed to parse RFC5424 record <{}>", next.offsetToJSON());
+                    throw new RuntimeException(e);
+                }
+            }
+            catch (NullPointerException e) {
+                if (config.getSkipEmptyRFC5424Records()) {
+                    LOGGER
+                            .warn(
+                                    "Skipping parsing an empty RFC5424 record, record metadata: <{}>. Exception information: ",
+                                    next.offsetToJSON(), e
+                            );
+                }
+                else {
+                    LOGGER.error("Failed to parse RFC5424 record <{}> because of null content", next.offsetToJSON());
+                    throw new RuntimeException(e);
+                }
+            }
+            long syslogRecordCapacity = syslogRecord.toByteBuffer().capacity();
+            long syslogFileCapacity = syslogFile.length();
+            // When the file size is about to go above 64M, commit the file into HDFS using the latest topic/partition/offset values as the filename and start fresh with a new empty AVRO-file.
             if (config.getMaximumFileSize() < (syslogFileCapacity + syslogRecordCapacity)) {
                 writeToHdfs(topic, partition, storedOffset);
             }
-            syslogAvroWriter.write(next);
-            storedOffset = next.getOffset();
+            try (SyslogAvroWriter syslogAvroWriter = new SyslogAvroWriter(syslogFile)) {
+                syslogAvroWriter.write(syslogRecord);
+            }
+            storedOffset = syslogRecord.getOffset();
         }
-        // Clear the syslogRecordList from successfully committed records.
-        syslogRecordList.clear();
+        // Clear the kafkaRecordList from successfully committed records.
+        kafkaRecordList.clear();
     }
 
     // Writes the file to hdfs and initializes new file.
     public void writeToHdfs(String topic, String partition, long offset) throws IOException {
         try (HDFSWrite writer = new HDFSWrite(config, topic, partition, offset)) {
+            //syslogAvroWriter.close();
             writer.commit(syslogFile); // commits the final AVRO-file to HDFS.
         }
-        // Because using SyslogAvroWriter
-        syslogFile.delete();
-        syslogFile.createNewFile();
+        // FIXME: Must re-initialize the avro-file as an empty file.
     }
 
 }

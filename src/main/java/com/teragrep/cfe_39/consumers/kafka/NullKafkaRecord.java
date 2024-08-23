@@ -51,16 +51,6 @@ import com.teragrep.cfe_39.avro.SyslogRecord;
 public final class NullKafkaRecord implements KafkaRecord {
 
     @Override
-    public boolean isNull() {
-        return true;
-    }
-
-    @Override
-    public byte[] record() {
-        return new byte[0];
-    }
-
-    @Override
     public long size() {
         return 0;
     }

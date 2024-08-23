@@ -90,7 +90,7 @@ public class KafkaReader implements AutoCloseable {
         }
 
         if (!recordOffsetObjectList.isEmpty()) {
-            /* This is the DatabaseOutput.accept() function.
+            /* This is the BatchDistribution.accept() function.
              KafkaRecord and other required data for HDFS storage are added to the input parameters of the accept() function which processes the consumed record.*/
             callbackFunction.accept(recordOffsetObjectList);
             kafkaConsumer.commitSync();

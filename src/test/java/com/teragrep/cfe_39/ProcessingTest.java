@@ -46,7 +46,7 @@
 package com.teragrep.cfe_39;
 
 import com.teragrep.cfe_39.avro.SyslogRecord;
-import com.teragrep.cfe_39.consumers.kafka.DatabaseOutput;
+import com.teragrep.cfe_39.consumers.kafka.BatchDistribution;
 import com.teragrep.cfe_39.consumers.kafka.KafkaRecordImpl;
 import com.teragrep.cfe_39.metrics.DurationStatistics;
 import com.teragrep.cfe_39.metrics.topic.TopicCounter;
@@ -65,13 +65,9 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -125,7 +121,7 @@ public class ProcessingTest {
 
         assertDoesNotThrow(() -> {
 
-            Consumer<List<KafkaRecordImpl>> output = new DatabaseOutput(
+            Consumer<List<KafkaRecordImpl>> output = new BatchDistribution(
                     config, // Configuration settings
                     "topicName", // String, the name of the topic
                     durationStatistics, // RuntimeStatistics object from metrics
@@ -390,6 +386,7 @@ public class ProcessingTest {
             recordOffsetObjectList.add(recordOffsetObject);
 
             output.accept(recordOffsetObjectList);
+
             // FIXME: file is not being recognized as avro file for some reason.
         });
     }
@@ -405,7 +402,7 @@ public class ProcessingTest {
 
         assertDoesNotThrow(() -> {
 
-            Consumer<List<KafkaRecordImpl>> output = new DatabaseOutput(
+            Consumer<List<KafkaRecordImpl>> output = new BatchDistribution(
                     config, // Configuration settings
                     "topicName", // String, the name of the topic
                     durationStatistics, // RuntimeStatistics object from metrics
@@ -463,7 +460,7 @@ public class ProcessingTest {
 
         assertDoesNotThrow(() -> {
 
-            Consumer<List<KafkaRecordImpl>> output = new DatabaseOutput(
+            Consumer<List<KafkaRecordImpl>> output = new BatchDistribution(
                     config, // Configuration settings
                     "topicName", // String, the name of the topic
                     durationStatistics, // RuntimeStatistics object from metrics
@@ -520,7 +517,7 @@ public class ProcessingTest {
 
         assertDoesNotThrow(() -> {
 
-            Consumer<List<KafkaRecordImpl>> output = new DatabaseOutput(
+            Consumer<List<KafkaRecordImpl>> output = new BatchDistribution(
                     config, // Configuration settings
                     "topicName", // String, the name of the topic
                     durationStatistics, // RuntimeStatistics object from metrics

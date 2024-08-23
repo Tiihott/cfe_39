@@ -49,7 +49,6 @@ import com.google.gson.*;
 import com.teragrep.cfe_39.Config;
 import com.teragrep.cfe_39.metrics.topic.TopicCounter;
 import com.teragrep.cfe_39.metrics.DurationStatistics;
-import com.teragrep.rlo_06.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,20 +61,19 @@ import java.util.function.Consumer;
   The target where the record is stored in HDFS is based on the topic, partition and offset. ie. topic_name/0.123456 where offset is 123456
  The mock consumer is activated for testing using the configuration file: readerKafkaProperties.getProperty("useMockKafkaConsumer", "false")*/
 
-public class DatabaseOutput implements Consumer<List<KafkaRecordImpl>> {
+public class BatchDistribution implements Consumer<List<KafkaRecordImpl>> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseOutput.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BatchDistribution.class);
+
     private final String topic;
     private final DurationStatistics durationStatistics;
     private final TopicCounter topicCounter;
     private long lastTimeCalled;
     private final Config config;
-    private final boolean skipNonRFC5424Records;
-    private final boolean skipEmptyRFC5424Records;
     private final Map<String, PartitionFile> partitionFileMap;
 
     // BatchDistribution? RecordDistribution?
-    public DatabaseOutput(
+    public BatchDistribution(
             Config config,
             String topic,
             DurationStatistics durationStatistics,
@@ -85,20 +83,15 @@ public class DatabaseOutput implements Consumer<List<KafkaRecordImpl>> {
         this.topic = topic;
         this.durationStatistics = durationStatistics;
         this.topicCounter = topicCounter;
-        this.skipNonRFC5424Records = config.getSkipNonRFC5424Records();
-        this.skipEmptyRFC5424Records = config.getSkipEmptyRFC5424Records();
         this.partitionFileMap = new HashMap<>();
-
         this.lastTimeCalled = Instant.now().toEpochMilli();
     }
 
     /* Input parameter is a batch of RecordOffsetObjects from kafka. Each object contains a record and its metadata (topic, partition and offset).
-     Each partition will get their set of exclusive AVRO-files in HDFS.
-     The target where the record is stored in HDFS is based on the topic, partition and last offset. ie. topic_name/0.123456 where last written record's offset is 123456.
-     AVRO-file with a path/name that starts with topic_name/0.X should only contain records from the 0th partition of topic named topic_name, topic_name/1.X should only contain records from 1st partition, etc.
-     AVRO-files are created dynamically, thus it is not known which record (and its offset) is written to the file last before committing it to HDFS. The final name for the HDFS file is decided only when the file is committed to HDFS.*/
+    * Distributes the received kafka record batch to PartitionFile objects based on topic partition which the record originates from.
+    * */
     @Override
-    public void accept(List<KafkaRecordImpl> recordOffsetObjectList) {
+    public void accept(List<KafkaRecordImpl> batch) {
         long thisTime = Instant.now().toEpochMilli();
         long ftook = thisTime - lastTimeCalled;
         topicCounter.setKafkaLatency(ftook);
@@ -106,71 +99,37 @@ public class DatabaseOutput implements Consumer<List<KafkaRecordImpl>> {
             LOGGER
                     .debug(
                             "Fuura searching your batch for <[{}]> with records <{}> and took  <{}> milliseconds. <{}> EPS. ",
-                            topic, recordOffsetObjectList.size(), (ftook),
-                            (recordOffsetObjectList.size() * 1000L / ftook)
+                            topic, batch.size(), (ftook), (batch.size() * 1000L / ftook)
                     );
         }
         long batchBytes = 0L;
+        long start = Instant.now().toEpochMilli();
+        // Starts measuring performance here. Measures how long it takes to process the whole batch.
 
-        /*  The recordOffsetObjectList loop will go through all the objects in the list.
-          The objects can serialize their contents into SyslogRecords that can be stored to an AVRO-file.
-          When the file size is about to go above 64M, commit the file into HDFS using the latest topic/partition/offset values as the filename and start fresh with a new empty AVRO-file.
-          Serialize the object that was going to make the file go above 64M into the now empty AVRO-file.
-          .*/
-        long start = Instant.now().toEpochMilli(); // Starts measuring performance here. Measures how long it takes to process the whole recordOffsetObjectList.
-        ListIterator<KafkaRecordImpl> recordOffsetListIterator = recordOffsetObjectList.listIterator();
+        // Distribute the records of the batch to a PartitionFile object based on partition from which the record originates from.
+        ListIterator<KafkaRecordImpl> recordOffsetListIterator = batch.listIterator();
         while (recordOffsetListIterator.hasNext()) {
-            // process recordOffsetObjectList here, the consumer only consumes 500 records in a single batch so the file can't be committed during a single accept().
-            // Distribute the records to a PartitionFile object based on partition from which the record originates from.
-
-            // load the next KafkaRecord
             KafkaRecordImpl next = recordOffsetListIterator.next();
-            // Read the topic, partition and offset information of the record
             JsonObject recordOffset = JsonParser.parseString(next.offsetToJSON()).getAsJsonObject();
-            String topic = recordOffset.get("topic").getAsString();
-            String partition = recordOffset.get("partition").getAsString();
-            // Pass the record to the PartitionFile object that it belongs to. If the correct PartitionFile doesn't exist, create one.
-            if (!partitionFileMap.containsKey(partition)) {
+            // If the PartitionFile corresponding to the record's partition doesn't exist, create one.
+            if (!partitionFileMap.containsKey(recordOffset.get("partition").getAsString())) {
                 try {
-                    partitionFileMap.put(partition, new PartitionFile(config, topic, partition));
+                    partitionFileMap
+                            .put(recordOffset.get("partition").getAsString(), new PartitionFile(config, recordOffset.get("topic").getAsString(), recordOffset.get("partition").getAsString()));
                 }
                 catch (IOException e) {
+                    LOGGER.error("Failed to create new PartitionFile for record <{}>", recordOffset);
                     throw new RuntimeException(e);
                 }
             }
             // Every PartitionFile object will hold responsibility over a single unique file that is related to a single topic partition.
-            PartitionFile recordPartitionFile = partitionFileMap.get(partition);
+            PartitionFile recordPartitionFile = partitionFileMap.get(recordOffset.get("partition").getAsString());
             // Tell PartitionFile to add the current record to the list of records that are going to be added to the file. Handle skipping of broken records.
-            try {
-                recordPartitionFile.addRecord(next.toSyslogRecord());
-            }
-            catch (ParseException e) {
-                if (skipNonRFC5424Records) {
-                    LOGGER
-                            .warn(
-                                    "Skipping parsing a non RFC5424 record, record metadata: <{}>. Exception information: ",
-                                    recordOffset, e
-                            );
-                }
-                else {
-                    throw new RuntimeException(e);
-                }
-            }
-            catch (NullPointerException e) {
-                if (skipEmptyRFC5424Records) {
-                    LOGGER
-                            .warn(
-                                    "Skipping parsing an empty RFC5424 record, record metadata: <{}>. Exception information: ",
-                                    recordOffset, e
-                            );
-                }
-                else {
-                    throw new RuntimeException(e);
-                }
-            }
+            recordPartitionFile.addRecord(next);
+            batchBytes = batchBytes + next.size(); // metrics
         }
 
-        // When all records in the current batch have been distributed to different PartitionFile objects successfully, commit the adding of records to the files for all PartitionFile objects.
+        // When all records in the current batch have been distributed to different PartitionFile objects successfully, proceed to adding the records to the files for all PartitionFile objects.
         partitionFileMap.forEach((key, value) -> {
             try {
                 value.commitRecords();
@@ -178,6 +137,7 @@ public class DatabaseOutput implements Consumer<List<KafkaRecordImpl>> {
             catch (IOException e) {
                 LOGGER.error("Failed to write the SyslogRecords to PartitionFile <{}> in topic <{}>", key, topic);
                 // FIXME: Delete the files that were stored to HDFS before the exception hit, to make sure data integrity is preserved during consumer rebalance as kafka consumer will not mark the failed record batch as committed.
+                // Maybe create a list of files that were stored to HDFS during the accept() call, which is then cleared at the very end of accept().
                 throw new RuntimeException(e);
             }
         });
@@ -189,19 +149,19 @@ public class DatabaseOutput implements Consumer<List<KafkaRecordImpl>> {
         if (took == 0) {
             took = 1;
         }
-        long rps = recordOffsetObjectList.size() * 1000L / took;
+        long rps = batch.size() * 1000L / took;
         topicCounter.setRecordsPerSecond(rps);
         long bps = batchBytes * 1000 / took;
         topicCounter.setBytesPerSecond(bps);
-        durationStatistics.addAndGetRecords(recordOffsetObjectList.size());
+        durationStatistics.addAndGetRecords(batch.size());
         durationStatistics.addAndGetBytes(batchBytes);
         topicCounter.addToTotalBytes(batchBytes);
-        topicCounter.addToTotalRecords(recordOffsetObjectList.size());
+        topicCounter.addToTotalRecords(batch.size());
         if (LOGGER.isDebugEnabled()) {
             LOGGER
                     .debug(
                             "Sent batch for <[{}]> with records <{}> and size <{}> KB took <{}> milliseconds. <{}> RPS. <{}> KB/s ",
-                            topic, recordOffsetObjectList.size(), batchBytes / 1024, (took), rps, bps / 1024
+                            topic, batch.size(), batchBytes / 1024, (took), rps, bps / 1024
                     );
         }
         lastTimeCalled = Instant.now().toEpochMilli();

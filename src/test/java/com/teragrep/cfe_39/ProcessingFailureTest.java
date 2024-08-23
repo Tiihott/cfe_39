@@ -45,7 +45,7 @@
  */
 package com.teragrep.cfe_39;
 
-import com.teragrep.cfe_39.consumers.kafka.DatabaseOutput;
+import com.teragrep.cfe_39.consumers.kafka.BatchDistribution;
 import com.teragrep.cfe_39.consumers.kafka.KafkaRecordImpl;
 import com.teragrep.cfe_39.metrics.DurationStatistics;
 import com.teragrep.cfe_39.metrics.topic.TopicCounter;
@@ -117,7 +117,7 @@ public class ProcessingFailureTest {
 
         assertDoesNotThrow(() -> {
 
-            Consumer<List<KafkaRecordImpl>> output = new DatabaseOutput(
+            Consumer<List<KafkaRecordImpl>> output = new BatchDistribution(
                     config, // Configuration settings
                     "topicName", // String, the name of the topic
                     durationStatistics, // RuntimeStatistics object from metrics
@@ -160,7 +160,7 @@ public class ProcessingFailureTest {
 
         assertDoesNotThrow(() -> {
 
-            Consumer<List<KafkaRecordImpl>> output = new DatabaseOutput(
+            Consumer<List<KafkaRecordImpl>> output = new BatchDistribution(
                     config, // Configuration settings
                     "topicName", // String, the name of the topic
                     durationStatistics, // RuntimeStatistics object from metrics

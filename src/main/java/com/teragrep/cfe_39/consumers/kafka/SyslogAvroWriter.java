@@ -61,19 +61,18 @@ public class SyslogAvroWriter implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SyslogAvroWriter.class);
 
-    private final DatumWriter<SyslogRecord> datumWriter = new SpecificDatumWriter<>(SyslogRecord.class);
-
+    private final DatumWriter<SyslogRecord> datumWriter;
     private final SyncableFileOutputStream syncableFileOutputStream;
-
-    private final DataFileWriter<SyslogRecord> dataFileWriter = new DataFileWriter<>(datumWriter);
+    private final DataFileWriter<SyslogRecord> dataFileWriter;
+    private final File syslogFile;
 
     public SyslogAvroWriter(File syslogFile) throws IOException {
+        this.syslogFile = syslogFile;
+        datumWriter = new SpecificDatumWriter<>(SyslogRecord.class);
+        dataFileWriter = new DataFileWriter<>(datumWriter);
         dataFileWriter.setCodec(CodecFactory.snappyCodec());
-
         syncableFileOutputStream = new SyncableFileOutputStream(syslogFile);
-
         syncableFileOutputStream.getChannel().tryLock();
-
         if (syslogFile.length() == 0) {
             // new file
             dataFileWriter.create(SyslogRecord.getClassSchema(), syncableFileOutputStream);

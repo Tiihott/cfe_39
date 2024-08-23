@@ -49,10 +49,6 @@ import com.teragrep.cfe_39.avro.SyslogRecord;
 
 public interface KafkaRecord {
 
-    boolean isNull();
-
-    byte[] record();
-
     long size();
 
     String offsetToJSON();

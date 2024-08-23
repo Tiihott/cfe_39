@@ -67,18 +67,13 @@ public final class KafkaRecordImpl implements KafkaRecord {
     }
 
     @Override
-    public boolean isNull() {
-        return false;
-    }
-
-    @Override
-    public byte[] record() {
-        return record;
-    }
-
-    @Override
     public long size() {
-        return record.length;
+        if (record == null) {
+            return 0;
+        }
+        else {
+            return record.length;
+        }
     }
 
     @Override
