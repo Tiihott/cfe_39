@@ -199,6 +199,7 @@
             <exclude>src/test/resources/broken.application.properties</exclude>
             <exclude>src/test/resources/valid.application.properties</exclude>
             <exclude>src/test/resources/failProcessing.application.properties</exclude>
+            <exclude>src/test/resources/largeFile.application.properties</exclude>
             <exclude>rpm/resources/config.jaas</exclude>
             <exclude>rpm/resources/log4j2.properties</exclude>
             <exclude>rpm/resources/application.properties</exclude>
