@@ -391,7 +391,7 @@ public class BatchDistributionTest {
 
             output.accept(recordOffsetObjectList);
 
-            // Assert that records 10-13 are present in local avro-file.
+            // Assert that records 11-13 are present in local avro-file.
 
             File queueDirectory = new File(config.getQueueDirectory());
             File[] files = queueDirectory.listFiles();
@@ -401,9 +401,6 @@ public class BatchDistributionTest {
             DataFileReader<SyslogRecord> dataFileReader = new DataFileReader<>(files[0], datumReader);
             Assertions.assertTrue(dataFileReader.hasNext());
             SyslogRecord next = dataFileReader.next();
-            Assertions.assertEquals(10, next.getOffset());
-            Assertions.assertTrue(dataFileReader.hasNext());
-            next = dataFileReader.next();
             Assertions.assertEquals(11, next.getOffset());
             Assertions.assertTrue(dataFileReader.hasNext());
             next = dataFileReader.next();
@@ -411,13 +408,12 @@ public class BatchDistributionTest {
             Assertions.assertTrue(dataFileReader.hasNext());
             next = dataFileReader.next();
             Assertions.assertEquals(13, next.getOffset());
-            Assertions.assertFalse(dataFileReader.hasNext());
 
-            // Assert that records 0-9 are present in HDFS
+            // Assert that records 0-10 are present in HDFS
 
             Assertions.assertEquals(1, fs.listStatus(new Path(config.getHdfsPath() + "/" + "topicName")).length);
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "topicName" + "/" + "0.9")));
-            Path hdfsreadpath = new Path(config.getHdfsPath() + "/" + "topicName" + "/" + "0.9");
+            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "topicName" + "/" + "0.10")));
+            Path hdfsreadpath = new Path(config.getHdfsPath() + "/" + "topicName" + "/" + "0.10");
             //Init input stream
             FSDataInputStream inputStream = fs.open(hdfsreadpath);
             //The data is in AVRO-format, so it can't be read as a string.
@@ -458,6 +454,9 @@ public class BatchDistributionTest {
             Assertions.assertTrue(reader.hasNext());
             syslogRecord = reader.next(syslogRecord);
             Assertions.assertEquals(9, syslogRecord.getOffset());
+            Assertions.assertTrue(reader.hasNext());
+            syslogRecord = reader.next(syslogRecord);
+            Assertions.assertEquals(10, syslogRecord.getOffset());
             Assertions.assertFalse(reader.hasNext());
 
         });

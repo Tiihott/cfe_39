@@ -67,17 +67,18 @@ public class PartitionFile {
     private final String topic;
     private final String partition;
     private final Config config;
-    private final WritableQueue writableQueue;
     private final File syslogFile;
     private final List<KafkaRecordImpl> kafkaRecordList;
+    private final List<Long> batchOffsets;
 
     PartitionFile(Config config, String topic, String partition) throws IOException {
-        this.writableQueue = new WritableQueue(config.getQueueDirectory(), topic + partition);
+        WritableQueue writableQueue = new WritableQueue(config.getQueueDirectory(), topic + partition);
         this.syslogFile = writableQueue.getNextWritableFile();
         this.kafkaRecordList = new ArrayList<>();
         this.config = config;
         this.topic = topic;
         this.partition = partition;
+        this.batchOffsets = new ArrayList<>();
     }
 
     public void addRecord(KafkaRecordImpl kafkaRecord) {
@@ -129,11 +130,9 @@ public class PartitionFile {
                     throw new RuntimeException(e);
                 }
             }
-            long syslogRecordCapacity = syslogRecord.toByteBuffer().capacity();
-            long syslogFileCapacity = syslogFile.length();
-            // When the file size is about to go above 64M, commit the file into HDFS using the latest topic/partition/offset values as the filename and start fresh with a new empty AVRO-file.
-            if (config.getMaximumFileSize() < (syslogFileCapacity + syslogRecordCapacity)) {
-                writeToHdfs(topic, partition, storedOffset);
+            // When the file size has gone above the maximum, commit the file into HDFS using the latest topic/partition/offset values as the filename and then delete the local avro-file.
+            if (config.getMaximumFileSize() < syslogFile.length()) {
+                writeToHdfs(storedOffset);
             }
             // SyslogAvroWriter initialization will re-initialize the syslogFile if it has been deleted because of writeToHdfs().
             try (SyslogAvroWriter syslogAvroWriter = new SyslogAvroWriter(syslogFile)) {
@@ -145,14 +144,27 @@ public class PartitionFile {
         }
         // Clear the kafkaRecordList from successfully committed records.
         kafkaRecordList.clear();
+        // Store the last offset of the batch to a list.
+        if (storedOffset > 0) {
+            batchOffsets.add(storedOffset);
+        }
+    }
+
+    public void writeToHdfsEarly() throws IOException {
+        if (!batchOffsets.isEmpty()) {
+            writeToHdfs(batchOffsets.get(batchOffsets.size()-1));
+        }
     }
 
     // Writes the file to hdfs and initializes new file.
-    public void writeToHdfs(String topic, String partition, long offset) throws IOException {
+    private void writeToHdfs(long offset) throws IOException {
         try (HDFSWrite writer = new HDFSWrite(config, topic, partition, offset)) {
             writer.commit(syslogFile); // commits the final AVRO-file to HDFS.
         }
-        syslogFile.delete(); // Deletes the file as all the contents have been stored to HDFS.
+        syslogFile.delete(); // Delete the file as all the contents have been stored to HDFS.
+        try (SyslogAvroWriter syslogAvroWriter = new SyslogAvroWriter(syslogFile)) {
+            // NoOp, syslogAvroWriter has initialized the empty AVRO-file.
+        }
     }
 
 }
