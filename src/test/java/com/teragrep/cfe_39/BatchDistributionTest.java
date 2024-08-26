@@ -75,9 +75,9 @@ import java.util.function.Consumer;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 // Tests for processing of consumed kafka records with skipping of broken records enabled (both null and non rfc5424).
-public class ProcessingTest {
+public class BatchDistributionTest {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ProcessingTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BatchDistributionTest.class);
 
     private static MiniDFSCluster hdfsCluster;
     private static File baseDir;
