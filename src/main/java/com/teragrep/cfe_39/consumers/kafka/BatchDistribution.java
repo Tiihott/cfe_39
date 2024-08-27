@@ -70,7 +70,7 @@ public class BatchDistribution implements Consumer<List<KafkaRecordImpl>> {
     private final TopicCounter topicCounter;
     private long lastTimeCalled;
     private final Config config;
-    private final Map<String, PartitionFile> partitionFileMap;
+    private final Map<String, PartitionFileImpl> partitionFileMap;
 
     // BatchDistribution? RecordDistribution?
     public BatchDistribution(
@@ -88,7 +88,7 @@ public class BatchDistribution implements Consumer<List<KafkaRecordImpl>> {
     }
 
     /* Input parameter is a batch of RecordOffsetObjects from kafka. Each object contains a record and its metadata (topic, partition and offset).
-    * Distributes the received kafka record batch to PartitionFile objects based on topic partition which the record originates from.
+    * Distributes the received kafka record batch to PartitionFileImpl objects based on topic partition which the record originates from.
     * */
     @Override
     public void accept(List<KafkaRecordImpl> batch) {
@@ -106,38 +106,40 @@ public class BatchDistribution implements Consumer<List<KafkaRecordImpl>> {
         long start = Instant.now().toEpochMilli();
         // Starts measuring performance here. Measures how long it takes to process the whole batch.
 
-        // Distribute the records of the batch to a PartitionFile object based on partition from which the record originates from.
+        // Distribute the records of the batch to a PartitionFileImpl object based on partition from which the record originates from.
         ListIterator<KafkaRecordImpl> recordOffsetListIterator = batch.listIterator();
         while (recordOffsetListIterator.hasNext()) {
             KafkaRecordImpl next = recordOffsetListIterator.next();
             JsonObject recordOffset = JsonParser.parseString(next.offsetToJSON()).getAsJsonObject();
-            // If the PartitionFile corresponding to the record's partition doesn't exist, create one.
+            // If the PartitionFileImpl corresponding to the record's partition doesn't exist, create one.
             if (!partitionFileMap.containsKey(recordOffset.get("partition").getAsString())) {
                 try {
                     partitionFileMap
-                            .put(recordOffset.get("partition").getAsString(), new PartitionFile(config, recordOffset.get("topic").getAsString(), recordOffset.get("partition").getAsString()));
+                            .put(recordOffset.get("partition").getAsString(), new PartitionFileImpl(config, recordOffset));
                 }
                 catch (IOException e) {
-                    LOGGER.error("Failed to create new PartitionFile for record <{}>", recordOffset);
+                    LOGGER.error("Failed to create new PartitionFileImpl for record <{}>", recordOffset);
                     throw new RuntimeException(e);
                 }
             }
-            // Every PartitionFile object will hold responsibility over a single unique file that is related to a single topic partition.
-            PartitionFile recordPartitionFile = partitionFileMap.get(recordOffset.get("partition").getAsString());
-            // Tell PartitionFile to add the current record to the list of records that are going to be added to the file. Handle skipping of broken records.
+            // Every PartitionFileImpl object will hold responsibility over a single unique file that is related to a single topic partition.
+            PartitionFileImpl recordPartitionFile = partitionFileMap.get(recordOffset.get("partition").getAsString());
+            // Tell PartitionFileImpl to add the current record to the list of records that are going to be added to the file.
             recordPartitionFile.addRecord(next);
             batchBytes = batchBytes + next.size(); // metrics
         }
 
-        // When all records in the current batch have been distributed to different PartitionFile objects successfully, proceed to adding the records to the files for all PartitionFile objects.
+        // When all records in the current batch have been distributed to different PartitionFileImpl objects successfully, proceed to adding the records to the files for all PartitionFileImpl objects.
         partitionFileMap.forEach((key, value) -> {
             try {
                 value.commitRecords();
+                // FIXME: Implement timeout checks for when the PartitionFileImpl object last time wrote to HDFS.
+                // Something like implementing lastTimeCalled on .writeToHdfs(), which is then checked during .commitRecords().
             }
             catch (IOException e) {
-                LOGGER.error("Failed to write the SyslogRecords to PartitionFile <{}> in topic <{}>", key, topic);
-                // FIXME: Delete the files that were stored to HDFS before the exception hit, to make sure data integrity is preserved during consumer rebalance as kafka consumer will not mark the failed record batch as committed.
-                // Maybe create a list of files that were stored to HDFS during the accept() call, which is then cleared at the very end of accept().
+                LOGGER.error("Failed to write the SyslogRecords to PartitionFileImpl <{}> in topic <{}>", key, topic);
+                // FIXME: Handle the issue of rebalancing the kafka consumer group in case an exception is thrown after part of the batch is stored to HDFS.
+                // Fail fast and restart the whole cfe_39 so the kafka consumer group offsets can be fetched again from the files stored in HDFS.
                 throw new RuntimeException(e);
             }
         });
