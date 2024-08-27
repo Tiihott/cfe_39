@@ -61,7 +61,7 @@ public class PartitionFileImpl implements PartitionFile {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PartitionFileImpl.class);
 
-    JsonObject topicPartition;
+    private final JsonObject topicPartition;
     private final Config config;
     private final File syslogFile;
     private final List<Long> batchOffsets;
@@ -87,7 +87,6 @@ public class PartitionFileImpl implements PartitionFile {
         List<SyslogRecord> syslogRecordList = partitionRecords.toSyslogRecordList();
         long storedOffset = 0;
         for (SyslogRecord next : syslogRecordList) {
-            // SyslogAvroWriter initialization will re-initialize the syslogFile if it has been deleted because of writeToHdfs().
             try (SyslogAvroWriter syslogAvroWriter = new SyslogAvroWriter(syslogFile)) {
                 syslogAvroWriter.write(next);
             }
