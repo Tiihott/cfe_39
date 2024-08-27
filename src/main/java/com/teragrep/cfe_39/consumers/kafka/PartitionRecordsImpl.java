@@ -45,7 +45,7 @@
  */
 package com.teragrep.cfe_39.consumers.kafka;
 
-import com.teragrep.cfe_39.Config;
+import com.teragrep.cfe_39.configuration.Config;
 import com.teragrep.cfe_39.avro.SyslogRecord;
 import com.teragrep.rlo_06.ParseException;
 import org.slf4j.Logger;

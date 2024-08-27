@@ -45,7 +45,7 @@
  */
 package com.teragrep.cfe_39.consumers.kafka;
 
-import com.teragrep.cfe_39.Config;
+import com.teragrep.cfe_39.configuration.Config;
 import com.teragrep.cfe_39.metrics.*;
 import com.teragrep.cfe_39.metrics.topic.TopicCounter;
 import org.apache.hadoop.fs.FileSystem;
@@ -210,7 +210,7 @@ public class HdfsDataIngestion {
 
         /* Every consumer is run in a separate thread.
          Consumer group is also handled here, and each consumer of the group runs on separate thread.*/
-        int numOfThreads = Math.min(numOfConsumers, listPartitionInfo.size()); // Makes sure that there aren't more consumers than available partitions in the consumer group.
+        int numOfThreads = Math.min(numOfConsumers, listPartitionInfo.size()); // FIXME: Alter the equation for calculating the number of threads.
         for (int threadId = 1; numOfThreads >= threadId; threadId++) {
             Consumer<List<KafkaRecordImpl>> output = new BatchDistribution(
                     config, // Configuration settings

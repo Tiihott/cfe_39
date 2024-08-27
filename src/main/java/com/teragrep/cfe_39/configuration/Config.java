@@ -43,7 +43,7 @@
  * Teragrep, the applicable Commercial License may apply to this file if you as
  * a licensee so wish it.
  */
-package com.teragrep.cfe_39;
+package com.teragrep.cfe_39.configuration;
 
 import org.apache.logging.log4j.core.config.Configurator;
 import org.slf4j.Logger;

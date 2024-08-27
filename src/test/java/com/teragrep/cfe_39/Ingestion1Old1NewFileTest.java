@@ -45,6 +45,7 @@
  */
 package com.teragrep.cfe_39;
 
+import com.teragrep.cfe_39.configuration.Config;
 import com.teragrep.cfe_39.consumers.kafka.HdfsDataIngestion;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FileUtil;

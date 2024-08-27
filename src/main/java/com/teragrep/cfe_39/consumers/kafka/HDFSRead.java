@@ -45,7 +45,7 @@
  */
 package com.teragrep.cfe_39.consumers.kafka;
 
-import com.teragrep.cfe_39.Config;
+import com.teragrep.cfe_39.configuration.Config;
 import org.apache.hadoop.fs.*;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;

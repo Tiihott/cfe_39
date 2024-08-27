@@ -45,6 +45,7 @@
  */
 package com.teragrep.cfe_39;
 
+import com.teragrep.cfe_39.configuration.Config;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -85,7 +86,6 @@ public class ConfigTest {
         });
         Assertions.assertEquals("hdfsuri not set", e.getMessage());
     }
-
 
     @Test
     public void configEqualityTest() {

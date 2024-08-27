@@ -46,7 +46,7 @@
 package com.teragrep.cfe_39.consumers.kafka;
 
 import com.google.gson.*;
-import com.teragrep.cfe_39.Config;
+import com.teragrep.cfe_39.configuration.Config;
 import com.teragrep.cfe_39.metrics.topic.TopicCounter;
 import com.teragrep.cfe_39.metrics.DurationStatistics;
 import org.slf4j.Logger;

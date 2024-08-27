@@ -45,6 +45,7 @@
  */
 package com.teragrep.cfe_39;
 
+import com.teragrep.cfe_39.configuration.Config;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hdfs.MiniDFSCluster;

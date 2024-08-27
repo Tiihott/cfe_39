@@ -47,6 +47,7 @@ package com.teragrep.cfe_39;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.teragrep.cfe_39.configuration.Config;
 import com.teragrep.cfe_39.consumers.kafka.HDFSWrite;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FileUtil;

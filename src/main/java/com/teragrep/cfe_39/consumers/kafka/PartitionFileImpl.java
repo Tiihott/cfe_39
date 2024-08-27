@@ -46,7 +46,7 @@
 package com.teragrep.cfe_39.consumers.kafka;
 
 import com.google.gson.JsonObject;
-import com.teragrep.cfe_39.Config;
+import com.teragrep.cfe_39.configuration.Config;
 import com.teragrep.cfe_39.avro.SyslogRecord;
 import com.teragrep.cfe_39.consumers.kafka.queue.WritableQueue;
 import org.slf4j.Logger;

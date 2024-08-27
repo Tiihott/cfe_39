@@ -46,6 +46,7 @@
 package com.teragrep.cfe_39;
 
 import com.teragrep.cfe_39.avro.SyslogRecord;
+import com.teragrep.cfe_39.configuration.Config;
 import com.teragrep.cfe_39.consumers.kafka.BatchDistribution;
 import com.teragrep.cfe_39.consumers.kafka.KafkaRecordImpl;
 import com.teragrep.cfe_39.metrics.DurationStatistics;
