@@ -46,11 +46,9 @@
 package com.teragrep.cfe_39.consumers.kafka;
 
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.teragrep.cfe_39.Config;
 import com.teragrep.cfe_39.avro.SyslogRecord;
 import com.teragrep.cfe_39.consumers.kafka.queue.WritableQueue;
-import com.teragrep.rlo_06.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +56,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ListIterator;
 
 public class PartitionFileImpl implements PartitionFile {
 
@@ -67,8 +64,8 @@ public class PartitionFileImpl implements PartitionFile {
     JsonObject topicPartition;
     private final Config config;
     private final File syslogFile;
-    private final List<KafkaRecordImpl> kafkaRecordList;
     private final List<Long> batchOffsets;
+    private final PartitionRecordsImpl partitionRecords;
 
     PartitionFileImpl(Config config, JsonObject topicPartition) throws IOException {
         WritableQueue writableQueue = new WritableQueue(
@@ -76,75 +73,32 @@ public class PartitionFileImpl implements PartitionFile {
                 topicPartition.get("topic").getAsString() + topicPartition.get("partition").getAsString()
         );
         this.syslogFile = writableQueue.getNextWritableFile();
-        this.kafkaRecordList = new ArrayList<>();
         this.config = config;
         this.topicPartition = topicPartition;
         this.batchOffsets = new ArrayList<>();
+        this.partitionRecords = new PartitionRecordsImpl(config);
     }
 
     public void addRecord(KafkaRecordImpl kafkaRecord) {
-        kafkaRecordList.add(kafkaRecord);
+        partitionRecords.addRecord(kafkaRecord);
     }
 
     public void commitRecords() throws IOException {
-        ListIterator<KafkaRecordImpl> kafkaRecordListIterator = kafkaRecordList.listIterator();
+        List<SyslogRecord> syslogRecordList = partitionRecords.toSyslogRecordList();
         long storedOffset = 0;
-        while (kafkaRecordListIterator.hasNext()) {
-            KafkaRecordImpl next = kafkaRecordListIterator.next();
-            SyslogRecord syslogRecord;
-            try {
-                syslogRecord = next.toSyslogRecord();
+        for (SyslogRecord next : syslogRecordList) {
+            // SyslogAvroWriter initialization will re-initialize the syslogFile if it has been deleted because of writeToHdfs().
+            try (SyslogAvroWriter syslogAvroWriter = new SyslogAvroWriter(syslogFile)) {
+                syslogAvroWriter.write(next);
             }
-            catch (ParseException e) {
-                if (config.getSkipNonRFC5424Records()) {
-                    LOGGER
-                            .warn(
-                                    "Skipping parsing a non RFC5424 record, record metadata: <{}>. Exception information: ",
-                                    next.offsetToJSON(), e
-                            );
-                    JsonObject recordOffset = JsonParser.parseString(next.offsetToJSON()).getAsJsonObject();
-                    if (recordOffset.get("offset").getAsLong() > storedOffset) {
-                        storedOffset = recordOffset.get("offset").getAsLong();
-                    }
-                    continue;
-                }
-                else {
-                    LOGGER.error("Failed to parse RFC5424 record <{}>", next.offsetToJSON());
-                    throw new RuntimeException(e);
-                }
-            }
-            catch (NullPointerException e) {
-                if (config.getSkipEmptyRFC5424Records()) {
-                    LOGGER
-                            .warn(
-                                    "Skipping parsing an empty RFC5424 record, record metadata: <{}>. Exception information: ",
-                                    next.offsetToJSON(), e
-                            );
-                    JsonObject recordOffset = JsonParser.parseString(next.offsetToJSON()).getAsJsonObject();
-                    if (recordOffset.get("offset").getAsLong() > storedOffset) {
-                        storedOffset = recordOffset.get("offset").getAsLong();
-                    }
-                    continue;
-                }
-                else {
-                    LOGGER.error("Failed to parse RFC5424 record <{}> because of null content", next.offsetToJSON());
-                    throw new RuntimeException(e);
-                }
+            if (next.getOffset() > storedOffset) {
+                storedOffset = next.getOffset();
             }
             // When the file size has gone above the maximum, commit the file into HDFS using the latest topic/partition/offset values as the filename and then delete the local avro-file.
             if (config.getMaximumFileSize() < syslogFile.length()) {
                 writeToHdfs(storedOffset);
             }
-            // SyslogAvroWriter initialization will re-initialize the syslogFile if it has been deleted because of writeToHdfs().
-            try (SyslogAvroWriter syslogAvroWriter = new SyslogAvroWriter(syslogFile)) {
-                syslogAvroWriter.write(syslogRecord);
-            }
-            if (syslogRecord.getOffset() > storedOffset) {
-                storedOffset = syslogRecord.getOffset();
-            }
         }
-        // Clear the kafkaRecordList from successfully committed records.
-        kafkaRecordList.clear();
         // Store the last offset of the batch to a list.
         if (storedOffset > 0) {
             batchOffsets.add(storedOffset);
