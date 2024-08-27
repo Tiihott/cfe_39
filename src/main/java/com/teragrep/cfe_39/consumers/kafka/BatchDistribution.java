@@ -72,7 +72,6 @@ public class BatchDistribution implements Consumer<List<KafkaRecordImpl>> {
     private final Config config;
     private final Map<String, PartitionFileImpl> partitionFileMap;
 
-    // BatchDistribution? RecordDistribution?
     public BatchDistribution(
             Config config,
             String topic,
@@ -133,13 +132,10 @@ public class BatchDistribution implements Consumer<List<KafkaRecordImpl>> {
         partitionFileMap.forEach((key, value) -> {
             try {
                 value.commitRecords();
-                // FIXME: Implement timeout checks for when the PartitionFileImpl object last time wrote to HDFS.
-                // Something like implementing lastTimeCalled on .writeToHdfs(), which is then checked during .commitRecords().
             }
             catch (IOException e) {
                 LOGGER.error("Failed to write the SyslogRecords to PartitionFileImpl <{}> in topic <{}>", key, topic);
-                // FIXME: Handle the issue of rebalancing the kafka consumer group in case an exception is thrown after part of the batch is stored to HDFS.
-                // Fail fast and restart the whole cfe_39 so the kafka consumer group offsets can be fetched again from the files stored in HDFS.
+                // FIXME: Fail fast and restart the whole cfe_39 so the kafka consumer group offsets can be fetched again from the files stored in HDFS.
                 throw new RuntimeException(e);
             }
         });

@@ -55,8 +55,7 @@ import java.util.*;
 
 public class KafkaReader implements AutoCloseable {
 
-    final Logger LOGGER = LoggerFactory.getLogger(KafkaReader.class);
-    private Iterator<ConsumerRecord<byte[], byte[]>> kafkaRecordsIterator = Collections.emptyIterator();
+    private final Logger LOGGER = LoggerFactory.getLogger(KafkaReader.class);
     private final Consumer<byte[], byte[]> kafkaConsumer;
     private final java.util.function.Consumer<List<KafkaRecordImpl>> callbackFunction;
 
@@ -69,7 +68,7 @@ public class KafkaReader implements AutoCloseable {
     }
 
     public void read() {
-        long offset;
+        Iterator<ConsumerRecord<byte[], byte[]>> kafkaRecordsIterator = Collections.emptyIterator();
         if (!kafkaRecordsIterator.hasNext()) {
             // still need to consume more, infinitely loop because connection problems may cause return of an empty iterator
             ConsumerRecords<byte[], byte[]> kafkaRecords = kafkaConsumer.poll(Duration.ofSeconds(60));
@@ -94,6 +93,9 @@ public class KafkaReader implements AutoCloseable {
              KafkaRecord and other required data for HDFS storage are added to the input parameters of the accept() function which processes the consumed record.*/
             callbackFunction.accept(recordOffsetObjectList);
             kafkaConsumer.commitSync();
+        }
+        else {
+            // FIXME: If no new kafka record batches is received for a while, a consumer rebalance may have happened. To resolve use callbackFunction.accept() with empty recordOffsetObjectList.
         }
     }
 

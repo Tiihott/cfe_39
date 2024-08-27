@@ -75,7 +75,7 @@ public class Config {
     private final String kerberosKeytabPath;
     private final String kerberosLoginAutorenewal;
     private final String kerberosTestMode;
-    private long maximumFileSize;
+    private final long maximumFileSize;
     private final int numOfConsumers;
     private final long pruneOffset;
     private final boolean skipNonRFC5424Records;
@@ -84,10 +84,18 @@ public class Config {
     private final String dfsEncryptDataTransferCipherSuites;
 
     public Config() throws IOException {
-        this("");
+        this("", 0);
+    }
+
+    public Config(long maximumFileSize) throws IOException {
+        this("", maximumFileSize);
     }
 
     public Config(String hdfsuri) throws IOException {
+        this(hdfsuri, 0);
+    }
+
+    public Config(String hdfsuri, long maximumFileSize) throws IOException {
         Properties properties = new Properties();
         Path configPath = Paths
                 .get(System.getProperty("cfe_39.config.location", "/opt/teragrep/cfe_39/etc/application.properties"));
@@ -118,9 +126,14 @@ public class Config {
 
         // AVRO
         this.queueDirectory = properties.getProperty("queueDirectory", System.getProperty("user.dir") + "/etc/AVRO/");
-        this.maximumFileSize = Long.parseLong(properties.getProperty("maximumFileSize", "60800000"));
-        if (this.maximumFileSize <= 0) {
-            throw new IllegalArgumentException("maximumFileSize must be set to >0, got " + maximumFileSize);
+        if (maximumFileSize > 0) {
+            this.maximumFileSize = maximumFileSize;
+        }
+        else {
+            this.maximumFileSize = Long.parseLong(properties.getProperty("maximumFileSize", "60800000"));
+            if (this.maximumFileSize <= 0) {
+                throw new IllegalArgumentException("maximumFileSize must be set to >0, got " + this.maximumFileSize);
+            }
         }
 
         // kerberos
@@ -265,10 +278,6 @@ public class Config {
 
     public long getMaximumFileSize() {
         return maximumFileSize;
-    }
-
-    public void setMaximumFileSize(long maximumFileSize) {
-        this.maximumFileSize = maximumFileSize;
     }
 
     public int getNumOfConsumers() {

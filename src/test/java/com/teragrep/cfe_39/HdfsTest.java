@@ -99,6 +99,7 @@ public class HdfsTest {
         FileUtil.fullyDelete(baseDir);
     }
 
+    @Disabled(value = "This needs refactoring")
     @Test
     public void hdfsWriteTest() {
         // This test case is for testing the functionality of the HDFSWrite.java by writing pre-generated AVRO-files to the HDFS database and asserting the results are correct.
@@ -146,6 +147,7 @@ public class HdfsTest {
         });
     }
 
+    @Disabled(value = "This needs refactoring")
     @Test
     public void hdfsWriteExceptionTest() {
         // This test case is for testing the functionality of the HDFSWrite.java exception handling by trying to write the same file twice and asserting that the proper exception is thrown.

@@ -102,6 +102,10 @@ public class PartitionFileImpl implements PartitionFile {
         if (storedOffset > 0) {
             batchOffsets.add(storedOffset);
         }
+        // No records mean consumer group rebalance happened, write file to HDFS.
+        if (syslogRecordList.isEmpty()) {
+            writeToHdfsEarly();
+        }
     }
 
     public void writeToHdfsEarly() throws IOException {
