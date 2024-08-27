@@ -85,4 +85,35 @@ public class ConfigTest {
         });
         Assertions.assertEquals("hdfsuri not set", e.getMessage());
     }
+
+
+    @Test
+    public void configEqualityTest() {
+        assertDoesNotThrow(() -> {
+            // Set system properties to use the valid configuration.
+            System
+                    .setProperty("cfe_39.config.location", System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
+            Config config1 = new Config();
+            Config config2 = new Config();
+            Config config3 = new Config("12345");
+            Config config4 = new Config("12345");
+            Assertions.assertNotEquals(config1, config2);
+            Assertions.assertNotEquals(config1, config3);
+            Assertions.assertNotEquals(config3, config4);
+        });
+    }
+
+    @Test
+    public void configConstructorTest() {
+        assertDoesNotThrow(() -> {
+            // Set system properties to use the valid configuration.
+            System
+                    .setProperty("cfe_39.config.location", System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
+            Config config1 = new Config();
+            Config config2 = new Config("12345");
+            Assertions.assertEquals(config1.getHdfsuri(), "hdfs://localhost:45937/");
+            Assertions.assertEquals(config2.getHdfsuri(), "12345");
+        });
+    }
+
 }

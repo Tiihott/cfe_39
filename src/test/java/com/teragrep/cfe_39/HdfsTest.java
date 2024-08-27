@@ -83,6 +83,7 @@ public class HdfsTest {
             // Create a HDFS miniCluster
             baseDir = Files.createTempDirectory("test_hdfs").toFile().getAbsoluteFile();
             hdfsCluster = new TestMiniClusterFactory().create(config, baseDir);
+            config = new Config("hdfs://localhost:" + hdfsCluster.getNameNodePort() + "/");
             fs = new TestFileSystemFactory().create(config.getHdfsuri());
         });
     }

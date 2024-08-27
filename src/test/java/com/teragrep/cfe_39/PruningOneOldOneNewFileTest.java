@@ -85,6 +85,7 @@ public class PruningOneOldOneNewFileTest {
             // Create a HDFS miniCluster
             baseDir = Files.createTempDirectory("test_hdfs").toFile().getAbsoluteFile();
             hdfsCluster = new TestMiniClusterFactory().create(config, baseDir);
+            config = new Config("hdfs://localhost:" + hdfsCluster.getNameNodePort() + "/");
             fs = new TestFileSystemFactory().create(config.getHdfsuri());
 
             /* Inserts pre-made avro-files to HDFS, which are normally generated during data ingestion from mock kafka consumer.
