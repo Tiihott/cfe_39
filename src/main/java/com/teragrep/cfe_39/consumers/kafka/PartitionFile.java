@@ -55,4 +55,6 @@ public interface PartitionFile {
 
     void writeToHdfsEarly() throws IOException;
 
+    void rebalance();
+
 }

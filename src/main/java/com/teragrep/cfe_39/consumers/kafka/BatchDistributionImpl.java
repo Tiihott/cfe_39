@@ -168,6 +168,10 @@ public class BatchDistributionImpl implements BatchDistribution {
     public void rebalance() {
         // Handle rebalancing here. Store all remaining records of all PartitionFile objects to HDFS.
         accept(new ArrayList<>()); // Will write all files with records still in them to HDFS.
-        // FIXME: delete all PartitionFile objects from the partitionFileMap. Must also delete the files linked to the objects.
+        // Delete all PartitionFile objects from the partitionFileMap. Must also delete the files linked to the objects.
+        partitionFileMap.forEach((key, value) -> {
+            value.rebalance();
+        });
+        partitionFileMap.clear();
     }
 }

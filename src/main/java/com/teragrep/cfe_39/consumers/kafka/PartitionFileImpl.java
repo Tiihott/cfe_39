@@ -79,10 +79,12 @@ public class PartitionFileImpl implements PartitionFile {
         this.partitionRecords = new PartitionRecordsImpl(config);
     }
 
+    @Override
     public void addRecord(KafkaRecordImpl kafkaRecord) {
         partitionRecords.addRecord(kafkaRecord);
     }
 
+    @Override
     public void commitRecords() throws IOException {
         List<SyslogRecord> syslogRecordList = partitionRecords.toSyslogRecordList();
         long storedOffset = 0;
@@ -108,10 +110,16 @@ public class PartitionFileImpl implements PartitionFile {
         }
     }
 
+    @Override
     public void writeToHdfsEarly() throws IOException {
         if (!batchOffsets.isEmpty()) {
             writeToHdfs(batchOffsets.get(batchOffsets.size() - 1));
         }
+    }
+
+    @Override
+    public void rebalance() {
+        syslogFile.delete();
     }
 
     // Writes the file to hdfs and initializes new file.
