@@ -416,7 +416,6 @@ public class BatchDistributionTest {
         });
     }
 
-    @Disabled(value = "This needs refactoring")
     @Test
     public void skipNonRFC5424DatabaseOutputTest() {
         // Initialize and register duration statistics
@@ -435,7 +434,7 @@ public class BatchDistributionTest {
                     new TopicCounter("topicName") // TopicCounter object from metrics
             );
 
-            ConsumerRecord<byte[], byte[]> record = new ConsumerRecord<>(
+            ConsumerRecord<byte[], byte[]> record1 = new ConsumerRecord<>(
                     "topicName",
                     0,
                     1L,
@@ -443,23 +442,56 @@ public class BatchDistributionTest {
                     "12>1 2022-04-25T07:34:50.806Z jla-02.default jla02logger - - [origin@48577 hostname=\"jla-02.default\"][event_id@48577 hostname=\"jla-02.default\" uuid=\"c3f13f9a-05e2-41bd-b0ad-1eca6fd6fd9a\" source=\"source\" unixtime=\"1650872090806\"][event_format@48577 original_format=\"rfc5424\"][event_node_relay@48577 hostname=\"cfe-06-0.cfe-06.default\" source=\"kafka-4.kafka.default.svc.cluster.local\" source_module=\"imrelp\"][event_version@48577 major=\"2\" minor=\"2\" hostname=\"cfe-06-0.cfe-06.default\" version_source=\"relay\"][event_node_router@48577 source=\"cfe-06-0.cfe-06.default.svc.cluster.local\" source_module=\"imrelp\" hostname=\"cfe-07-0.cfe-07.default\"][teragrep@48577 streamname=\"test:jla02logger:0\" directory=\"jla02logger\" unixtime=\"1650872090\"] [ERROR] 2022-04-25 07:34:50,806 com.teragrep.jla_02.Log4j Log - Log4j error says hi!"
                             .getBytes(StandardCharsets.UTF_8)
             );
-            KafkaRecordImpl kafkaRecord = new KafkaRecordImpl(
-                    record.topic(),
-                    record.partition(),
-                    record.offset(),
-                    record.value()
+            KafkaRecordImpl kafkaRecord1 = new KafkaRecordImpl(
+                    record1.topic(),
+                    record1.partition(),
+                    record1.offset(),
+                    record1.value()
+            );
+
+            ConsumerRecord<byte[], byte[]> record2 = new ConsumerRecord<>(
+                    "topicName",
+                    0,
+                    2L,
+                    "2022-04-25T07:34:50.8067".getBytes(StandardCharsets.UTF_8),
+                    "12>1 2022-04-25T07:34:50.807Z jla-02.default jla02logger - - [origin@48577 hostname=\"jla-02.default\"][event_id@48577 hostname=\"jla-02.default\" uuid=\"c3f13f9a-05e2-41bd-b0ad-1eca6fd6fd9a\" source=\"source\" unixtime=\"1650872090806\"][event_format@48577 original_format=\"rfc5424\"][event_node_relay@48577 hostname=\"cfe-06-0.cfe-06.default\" source=\"kafka-4.kafka.default.svc.cluster.local\" source_module=\"imrelp\"][event_version@48577 major=\"2\" minor=\"2\" hostname=\"cfe-06-0.cfe-06.default\" version_source=\"relay\"][event_node_router@48577 source=\"cfe-06-0.cfe-06.default.svc.cluster.local\" source_module=\"imrelp\" hostname=\"cfe-07-0.cfe-07.default\"][teragrep@48577 streamname=\"test:jla02logger:0\" directory=\"jla02logger\" unixtime=\"1650872090\"] [ERROR] 2022-04-25 07:34:50,806 com.teragrep.jla_02.Log4j Log - Log4j error says hi!"
+                            .getBytes(StandardCharsets.UTF_8)
+            );
+            KafkaRecordImpl kafkaRecord2 = new KafkaRecordImpl(
+                    record2.topic(),
+                    record2.partition(),
+                    record2.offset(),
+                    record2.value()
+            );
+
+            ConsumerRecord<byte[], byte[]> record3 = new ConsumerRecord<>(
+                    "topicName",
+                    0,
+                    3L,
+                    "2022-04-25T07:34:50.807Z".getBytes(StandardCharsets.UTF_8),
+                    "<12>1 2022-04-25T07:34:50.807Z jla-02.default jla02logger - - [origin@48577 hostname=\"jla-02.default\"][event_id@48577 hostname=\"jla-02.default\" uuid=\"c3f13f9a-05e2-41bd-b0ad-1eca6fd6fd9a\" source=\"source\" unixtime=\"1650872090806\"][event_format@48577 original_format=\"rfc5424\"][event_node_relay@48577 hostname=\"cfe-06-0.cfe-06.default\" source=\"kafka-4.kafka.default.svc.cluster.local\" source_module=\"imrelp\"][event_version@48577 major=\"2\" minor=\"2\" hostname=\"cfe-06-0.cfe-06.default\" version_source=\"relay\"][event_node_router@48577 source=\"cfe-06-0.cfe-06.default.svc.cluster.local\" source_module=\"imrelp\" hostname=\"cfe-07-0.cfe-07.default\"][teragrep@48577 streamname=\"test:jla02logger:0\" directory=\"jla02logger\" unixtime=\"1650872090\"] [ERROR] 2022-04-25 07:34:50,806 com.teragrep.jla_02.Log4j Log - Log4j error says hi!"
+                            .getBytes(StandardCharsets.UTF_8)
+            );
+            KafkaRecordImpl kafkaRecord3 = new KafkaRecordImpl(
+                    record3.topic(),
+                    record3.partition(),
+                    record3.offset(),
+                    record3.value()
             );
 
             List<KafkaRecordImpl> kafkaRecordList = new ArrayList<>();
-            kafkaRecordList.add(kafkaRecord);
+            kafkaRecordList.add(kafkaRecord1);
+            kafkaRecordList.add(kafkaRecord2);
+            kafkaRecordList.add(kafkaRecord3);
             output.accept(kafkaRecordList);
+            output.accept(new ArrayList<>());
             Assertions.assertEquals(1, fs.listStatus(new Path(config.getHdfsPath() + "/" + "topicName")).length);
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "topicName" + "/" + "0.1")));
-            // File in hdfs does not contain any records, but acts as a marker for kafka consumer offsets.
+            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "topicName" + "/" + "0.3")));
+            // File in hdfs does not contain any empty records.
 
-            // Assert that the file in hdfs contains the expected zero record.
+            // Assert that the file in hdfs contains the expected one record.
 
-            Path hdfsreadpath = new Path(config.getHdfsPath() + "/" + "topicName" + "/" + "0.1");
+            Path hdfsreadpath = new Path(config.getHdfsPath() + "/" + "topicName" + "/" + "0.3");
             //Init input stream
             FSDataInputStream inputStream = fs.open(hdfsreadpath);
             //The data is in AVRO-format, so it can't be read as a string.
@@ -470,12 +502,19 @@ public class BatchDistributionTest {
             SyslogRecord syslogRecord = null;
             LOGGER.info("\nReading records from file {}:", hdfsreadpath);
 
+            Assertions.assertTrue(reader.hasNext());
+            syslogRecord = reader.next(syslogRecord);
+            Assertions
+                    .assertEquals(
+                            "{\"timestamp\": 1650872090807000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \"0\", \"offset\": 3, \"origin\": \"jla-02.default\", \"payload\": \"[ERROR] 2022-04-25 07:34:50,806 com.teragrep.jla_02.Log4j Log - Log4j error says hi!\"}",
+                            syslogRecord.toString()
+                    );
+
             Assertions.assertFalse(reader.hasNext());
         });
 
     }
 
-    @Disabled(value = "This needs refactoring")
     @Test
     public void skipNullRFC5424DatabaseOutputTest() {
         // Initialize and register duration statistics
@@ -508,16 +547,33 @@ public class BatchDistributionTest {
                     record.value()
             );
 
+            ConsumerRecord<byte[], byte[]> record3 = new ConsumerRecord<>(
+                    "topicName",
+                    0,
+                    2L,
+                    "2022-04-25T07:34:50.807Z".getBytes(StandardCharsets.UTF_8),
+                    "<12>1 2022-04-25T07:34:50.807Z jla-02.default jla02logger - - [origin@48577 hostname=\"jla-02.default\"][event_id@48577 hostname=\"jla-02.default\" uuid=\"c3f13f9a-05e2-41bd-b0ad-1eca6fd6fd9a\" source=\"source\" unixtime=\"1650872090806\"][event_format@48577 original_format=\"rfc5424\"][event_node_relay@48577 hostname=\"cfe-06-0.cfe-06.default\" source=\"kafka-4.kafka.default.svc.cluster.local\" source_module=\"imrelp\"][event_version@48577 major=\"2\" minor=\"2\" hostname=\"cfe-06-0.cfe-06.default\" version_source=\"relay\"][event_node_router@48577 source=\"cfe-06-0.cfe-06.default.svc.cluster.local\" source_module=\"imrelp\" hostname=\"cfe-07-0.cfe-07.default\"][teragrep@48577 streamname=\"test:jla02logger:0\" directory=\"jla02logger\" unixtime=\"1650872090\"] [ERROR] 2022-04-25 07:34:50,806 com.teragrep.jla_02.Log4j Log - Log4j error says hi!"
+                            .getBytes(StandardCharsets.UTF_8)
+            );
+            KafkaRecordImpl kafkaRecord3 = new KafkaRecordImpl(
+                    record3.topic(),
+                    record3.partition(),
+                    record3.offset(),
+                    record3.value()
+            );
+
             List<KafkaRecordImpl> kafkaRecordList = new ArrayList<>();
             kafkaRecordList.add(kafkaRecord);
+            kafkaRecordList.add(kafkaRecord3);
             output.accept(kafkaRecordList);
+            output.accept(new ArrayList<>());
             Assertions.assertEquals(1, fs.listStatus(new Path(config.getHdfsPath() + "/" + "topicName")).length);
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "topicName" + "/" + "0.1")));
+            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "topicName" + "/" + "0.2")));
             // File in hdfs does not contain any records, but acts as a marker for kafka consumer offsets.
 
             // Assert that the file in hdfs contains the expected zero record.
 
-            Path hdfsreadpath = new Path(config.getHdfsPath() + "/" + "topicName" + "/" + "0.1");
+            Path hdfsreadpath = new Path(config.getHdfsPath() + "/" + "topicName" + "/" + "0.2");
             //Init input stream
             FSDataInputStream inputStream = fs.open(hdfsreadpath);
             //The data is in AVRO-format, so it can't be read as a string.
@@ -528,12 +584,19 @@ public class BatchDistributionTest {
             SyslogRecord syslogRecord = null;
             LOGGER.info("\nReading records from file {}:", hdfsreadpath);
 
+            Assertions.assertTrue(reader.hasNext());
+            syslogRecord = reader.next(syslogRecord);
+            Assertions
+                    .assertEquals(
+                            "{\"timestamp\": 1650872090807000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \"0\", \"offset\": 2, \"origin\": \"jla-02.default\", \"payload\": \"[ERROR] 2022-04-25 07:34:50,806 com.teragrep.jla_02.Log4j Log - Log4j error says hi!\"}",
+                            syslogRecord.toString()
+                    );
+
             Assertions.assertFalse(reader.hasNext());
         });
 
     }
 
-    @Disabled(value = "This needs refactoring")
     @Test
     public void skipNullAndNonRFC5424DatabaseOutputTest() {
         // Initialize and register duration statistics
@@ -590,6 +653,7 @@ public class BatchDistributionTest {
             kafkaRecord = new KafkaRecordImpl(record.topic(), record.partition(), record.offset(), record.value());
             kafkaRecordList.add(kafkaRecord);
             output.accept(kafkaRecordList);
+            output.accept(new ArrayList<>());
             Assertions.assertEquals(1, fs.listStatus(new Path(config.getHdfsPath() + "/" + "topicName")).length);
             Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "topicName" + "/" + "0.3")));
 

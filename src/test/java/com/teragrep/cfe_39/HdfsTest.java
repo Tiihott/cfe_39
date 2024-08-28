@@ -99,14 +99,12 @@ public class HdfsTest {
         FileUtil.fullyDelete(baseDir);
     }
 
-    @Disabled(value = "This needs refactoring")
     @Test
     public void hdfsWriteTest() {
         // This test case is for testing the functionality of the HDFSWrite.java by writing pre-generated AVRO-files to the HDFS database and asserting the results are correct.
         assertDoesNotThrow(() -> {
             Assertions.assertFalse(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic")));
 
-            // writer.commit will delete the file that is given as an input argument. Copy the mock files to another directory so the deletion can be asserted properly too.
             String pathname = System.getProperty("user.dir") + "/src/test/resources/mockHdfsFiles/0.9";
             java.nio.file.Path sourceFile = Paths.get(pathname);
             java.nio.file.Path targetDir = Paths.get(config.getQueueDirectory());
@@ -119,8 +117,9 @@ public class HdfsTest {
                     .parseString("{\"topic\":\"testConsumerTopic\", \"partition\":0, \"offset\":9}")
                     .getAsJsonObject();
             try (HDFSWrite writer = new HDFSWrite(config, "testConsumerTopic", "0", 9)) {
-                writer.commit(avroFile); // commits avroFile to HDFS and deletes avroFile afterward.
+                writer.commit(avroFile); // commits avroFile to HDFS.
             }
+            targetFile.toFile().delete(); // writer no longer handles deletion of the files
             Assertions.assertFalse(targetFile.toFile().exists());
             Assertions
                     .assertEquals(1, fs.listStatus(new Path(config.getHdfsPath() + "/" + "testConsumerTopic")).length);
@@ -139,6 +138,7 @@ public class HdfsTest {
             try (HDFSWrite writer = new HDFSWrite(config, "testConsumerTopic", "0", 13)) {
                 writer.commit(avroFile); // commits avroFile to HDFS and deletes avroFile afterward.
             }
+            targetFile.toFile().delete(); // writer no longer handles deletion of the files
             Assertions.assertFalse(targetFile.toFile().exists());
             Assertions
                     .assertEquals(2, fs.listStatus(new Path(config.getHdfsPath() + "/" + "testConsumerTopic")).length);
@@ -147,29 +147,27 @@ public class HdfsTest {
         });
     }
 
-    @Disabled(value = "This needs refactoring")
     @Test
     public void hdfsWriteExceptionTest() {
         // This test case is for testing the functionality of the HDFSWrite.java exception handling by trying to write the same file twice and asserting that the proper exception is thrown.
         assertDoesNotThrow(() -> {
             Assertions.assertFalse(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic")));
 
-            // writer.commit will delete the source file that is given as an input argument. Copy the mock file to another directory so the deletion of the source file can be asserted properly.
             String pathname = System.getProperty("user.dir") + "/src/test/resources/mockHdfsFiles/0.9";
             java.nio.file.Path sourceFile = Paths.get(pathname);
             java.nio.file.Path targetDir = Paths.get(config.getQueueDirectory());
             java.nio.file.Path targetFile = targetDir.resolve(sourceFile.getFileName());
             Assertions.assertFalse(targetFile.toFile().exists());
             Files.copy(sourceFile, targetFile);
-
             Assertions.assertTrue(targetFile.toFile().exists());
             File avroFile = new File(targetFile.toUri());
             JsonObject recordOffsetJo = JsonParser
                     .parseString("{\"topic\":\"testConsumerTopic\", \"partition\":0, \"offset\":9}")
                     .getAsJsonObject();
             try (HDFSWrite writer = new HDFSWrite(config, "testConsumerTopic", "0", 9)) {
-                writer.commit(avroFile); // commits avroFile to HDFS and deletes avroFile afterward.
+                writer.commit(avroFile); // commits avroFile to HDFS.
             }
+            targetFile.toFile().delete(); // writer no longer handles deletion of the files
             Assertions.assertFalse(targetFile.toFile().exists());
             Assertions
                     .assertEquals(1, fs.listStatus(new Path(config.getHdfsPath() + "/" + "testConsumerTopic")).length);
@@ -186,6 +184,7 @@ public class HdfsTest {
             Exception e = Assertions.assertThrows(Exception.class, () -> writer.commit(finalAvroFile));
             Assertions.assertEquals("File 0.9 already exists", e.getMessage());
             writer.close();
+            targetFile.toFile().delete(); // writer no longer handles deletion of the files
             Assertions.assertFalse(targetFile.toFile().exists());
             Assertions
                     .assertEquals(1, fs.listStatus(new Path(config.getHdfsPath() + "/" + "testConsumerTopic")).length);
