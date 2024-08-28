@@ -52,7 +52,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.function.Consumer;
 
 public class ReadCoordinator implements Runnable {
 
@@ -60,14 +59,14 @@ public class ReadCoordinator implements Runnable {
 
     private final String queueTopic;
     private final Properties readerKafkaProperties;
-    private final Consumer<List<KafkaRecordImpl>> callbackFunction;
+    private final BatchDistributionImpl callbackFunction;
     private boolean run = true;
     private final Map<TopicPartition, Long> hdfsStartOffsets;
 
     public ReadCoordinator(
             String queueTopic,
             Properties readerKafkaProperties,
-            Consumer<List<KafkaRecordImpl>> callbackFunction,
+            BatchDistributionImpl callbackFunction,
             Map<TopicPartition, Long> hdfsStartOffsets
     ) {
         this.queueTopic = queueTopic;
@@ -79,7 +78,7 @@ public class ReadCoordinator implements Runnable {
     private KafkaReader createKafkaReader(
             Properties readerKafkaProperties,
             String topic,
-            Consumer<List<KafkaRecordImpl>> callbackFunction,
+            BatchDistributionImpl callbackFunction,
             boolean useMockKafkaConsumer
     ) {
 

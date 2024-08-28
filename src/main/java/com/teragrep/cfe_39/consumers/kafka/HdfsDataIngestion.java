@@ -66,7 +66,6 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -212,7 +211,7 @@ public class HdfsDataIngestion {
          Consumer group is also handled here, and each consumer of the group runs on separate thread.*/
         int numOfThreads = Math.min(numOfConsumers, listPartitionInfo.size()); // FIXME: Alter the equation for calculating the number of threads.
         for (int threadId = 1; numOfThreads >= threadId; threadId++) {
-            Consumer<List<KafkaRecordImpl>> output = new BatchDistribution(
+            BatchDistributionImpl output = new BatchDistributionImpl(
                     config, // Configuration settings
                     topic, // String, the name of the topic
                     durationStatistics, // RuntimeStatistics object from metrics

@@ -57,14 +57,13 @@ public class KafkaReader implements AutoCloseable {
 
     private final Logger LOGGER = LoggerFactory.getLogger(KafkaReader.class);
     private final Consumer<byte[], byte[]> kafkaConsumer;
-    private final java.util.function.Consumer<List<KafkaRecordImpl>> callbackFunction;
+    private final BatchDistributionImpl callbackFunction;
+    private final IngestionRebalanceListener ingestionRebalanceListener;
 
-    public KafkaReader(
-            Consumer<byte[], byte[]> kafkaConsumer,
-            java.util.function.Consumer<List<KafkaRecordImpl>> callbackFunction
-    ) {
+    public KafkaReader(Consumer<byte[], byte[]> kafkaConsumer, BatchDistributionImpl callbackFunction) {
         this.kafkaConsumer = kafkaConsumer;
         this.callbackFunction = callbackFunction;
+        this.ingestionRebalanceListener = new IngestionRebalanceListener(this.kafkaConsumer, this.callbackFunction);
     }
 
     public void read() {
@@ -89,13 +88,20 @@ public class KafkaReader implements AutoCloseable {
         }
 
         if (!recordOffsetObjectList.isEmpty()) {
-            /* This is the BatchDistribution.accept() function.
+            /* This is the BatchDistributionImpl.accept() function.
              KafkaRecord and other required data for HDFS storage are added to the input parameters of the accept() function which processes the consumed record.*/
             callbackFunction.accept(recordOffsetObjectList);
             kafkaConsumer.commitSync();
+            // lastTimeCalled = Instant.now().toEpochMilli();
         }
         else {
-            // FIXME: If no new kafka record batches is received for a while, a consumer rebalance may have happened. To resolve use callbackFunction.accept() with empty recordOffsetObjectList.
+            // FIXME: If no new kafka record batches is received for a while, use callbackFunction.accept() with empty recordOffsetObjectList to flush records that have already been committed in kafka to HDFS.
+            /*long thisTime = Instant.now().toEpochMilli();
+            long ftook = thisTime - lastTimeCalled;
+            if (ftook > config.consumerTimeout) {
+                callbackFunction.accept(recordOffsetObjectList);
+                lastTimeCalled = Instant.now().toEpochMilli();
+            }*/
         }
     }
 

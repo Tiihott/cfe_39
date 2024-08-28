@@ -45,10 +45,30 @@
  */
 package com.teragrep.cfe_39.consumers.kafka;
 
-import java.util.List;
-import java.util.function.Consumer;
+import org.apache.kafka.clients.consumer.Consumer;
+import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
+import org.apache.kafka.common.TopicPartition;
 
-public interface BatchDistribution extends Consumer<List<KafkaRecordImpl>> {
+import java.util.Collection;
 
-    void rebalance();
+public class IngestionRebalanceListener implements ConsumerRebalanceListener {
+
+    private final Consumer<byte[], byte[]> kafkaConsumer;
+    private final BatchDistributionImpl callbackFunction;
+
+    public IngestionRebalanceListener(Consumer<byte[], byte[]> kafkaConsumer, BatchDistributionImpl callbackFunction) {
+        this.kafkaConsumer = kafkaConsumer;
+        this.callbackFunction = callbackFunction;
+    }
+
+    @Override
+    public void onPartitionsRevoked(Collection<TopicPartition> collection) {
+        // Flush any records from the temporary files to HDFS to synchronize database with committed kafka offsets, and clean up PartitionFile list.
+        callbackFunction.rebalance();
+    }
+
+    @Override
+    public void onPartitionsAssigned(Collection<TopicPartition> collection) {
+        // NoOp: records and offsets are already stored to HDFS by the callbackFunction.rebalance(), and kafka coordinator should handle committed offsets automatically.
+    }
 }

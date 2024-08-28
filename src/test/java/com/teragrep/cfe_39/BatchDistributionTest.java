@@ -47,7 +47,7 @@ package com.teragrep.cfe_39;
 
 import com.teragrep.cfe_39.avro.SyslogRecord;
 import com.teragrep.cfe_39.configuration.Config;
-import com.teragrep.cfe_39.consumers.kafka.BatchDistribution;
+import com.teragrep.cfe_39.consumers.kafka.BatchDistributionImpl;
 import com.teragrep.cfe_39.consumers.kafka.KafkaRecordImpl;
 import com.teragrep.cfe_39.metrics.DurationStatistics;
 import com.teragrep.cfe_39.metrics.topic.TopicCounter;
@@ -127,7 +127,7 @@ public class BatchDistributionTest {
 
         assertDoesNotThrow(() -> {
 
-            Consumer<List<KafkaRecordImpl>> output = new BatchDistribution(
+            BatchDistributionImpl output = new BatchDistributionImpl(
                     config, // Configuration settings
                     "topicName", // String, the name of the topic
                     durationStatistics, // RuntimeStatistics object from metrics
@@ -428,7 +428,7 @@ public class BatchDistributionTest {
 
         assertDoesNotThrow(() -> {
 
-            Consumer<List<KafkaRecordImpl>> output = new BatchDistribution(
+            Consumer<List<KafkaRecordImpl>> output = new BatchDistributionImpl(
                     config, // Configuration settings
                     "topicName", // String, the name of the topic
                     durationStatistics, // RuntimeStatistics object from metrics
@@ -487,7 +487,7 @@ public class BatchDistributionTest {
 
         assertDoesNotThrow(() -> {
 
-            Consumer<List<KafkaRecordImpl>> output = new BatchDistribution(
+            Consumer<List<KafkaRecordImpl>> output = new BatchDistributionImpl(
                     config, // Configuration settings
                     "topicName", // String, the name of the topic
                     durationStatistics, // RuntimeStatistics object from metrics
@@ -545,7 +545,7 @@ public class BatchDistributionTest {
 
         assertDoesNotThrow(() -> {
 
-            Consumer<List<KafkaRecordImpl>> output = new BatchDistribution(
+            Consumer<List<KafkaRecordImpl>> output = new BatchDistributionImpl(
                     config, // Configuration settings
                     "topicName", // String, the name of the topic
                     durationStatistics, // RuntimeStatistics object from metrics
