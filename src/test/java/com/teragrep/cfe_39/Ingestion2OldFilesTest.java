@@ -45,8 +45,12 @@
  */
 package com.teragrep.cfe_39;
 
+import com.teragrep.cfe_39.avro.SyslogRecord;
 import com.teragrep.cfe_39.configuration.Config;
 import com.teragrep.cfe_39.consumers.kafka.HdfsDataIngestion;
+import org.apache.avro.file.DataFileReader;
+import org.apache.avro.io.DatumReader;
+import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
@@ -58,6 +62,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -130,7 +136,6 @@ public class Ingestion2OldFilesTest {
         FileUtil.fullyDelete(baseDir);
     }
 
-    @Disabled(value = "This needs refactoring")
     @DisabledIfSystemProperty(
             named = "skipIngestionTest",
             matches = "true"
@@ -155,21 +160,39 @@ public class Ingestion2OldFilesTest {
             Thread.sleep(10000);
             hdfsDataIngestion.run();
 
-            // Assert that the kafka records were ingested and pruned correctly and the database holds only the expected 9 files.
+            // Assert that the kafka records were ingested and pruned correctly and the database doesn't hold any files.
             Assertions
-                    .assertEquals(9, fs.listStatus(new Path(config.getHdfsPath() + "/" + "testConsumerTopic")).length);
-            Assertions.assertFalse(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic" + "/" + "0.9")));
-            Assertions
-                    .assertFalse(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic" + "/" + "0.13")));
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic" + "/" + "1.13")));
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic" + "/" + "2.13")));
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic" + "/" + "3.13")));
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic" + "/" + "4.13")));
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic" + "/" + "5.13")));
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic" + "/" + "6.13")));
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic" + "/" + "7.13")));
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic" + "/" + "8.13")));
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic" + "/" + "9.13")));
+                    .assertEquals(0, fs.listStatus(new Path(config.getHdfsPath() + "/" + "testConsumerTopic")).length);
+
+            // Assert the avro-files that were too small to be stored in HDFS.
+            String path1 = config.getQueueDirectory() + "/" + "testConsumerTopic0.1";
+            File avroFile1 = new File(path1);
+            Assertions.assertTrue(avroFile1.exists());
+            DatumReader<SyslogRecord> datumReader1 = new SpecificDatumReader<>(SyslogRecord.class);
+            DataFileReader<SyslogRecord> reader1 = new DataFileReader<>(avroFile1, datumReader1);
+            Assertions.assertFalse(reader1.hasNext()); // Partition 0 avro-file should be empty.
+            reader1.close();
+            avroFile1.delete();
+
+            List<String> filenameList = new ArrayList<>();
+            for (int i = 1; i <= 9; i++) {
+                filenameList.add("testConsumerTopic" + i + "." + 1);
+            }
+            for (String fileName : filenameList) {
+                String path2 = config.getQueueDirectory() + "/" + fileName;
+                File avroFile = new File(path2);
+                Assertions.assertTrue(filenameList.contains(avroFile.getName()));
+                DatumReader<SyslogRecord> datumReader = new SpecificDatumReader<>(SyslogRecord.class);
+                DataFileReader<SyslogRecord> reader = new DataFileReader<>(avroFile, datumReader);
+                for (int i = 0; i <= 13; i++) {
+                    Assertions.assertTrue(reader.hasNext());
+                    SyslogRecord record = reader.next();
+                    Assertions.assertEquals(i, record.getOffset());
+                }
+                Assertions.assertFalse(reader.hasNext());
+                reader.close();
+                avroFile.delete();
+            }
         });
     }
 }
