@@ -48,9 +48,9 @@ package com.teragrep.cfe_39;
 import com.teragrep.cfe_39.avro.SyslogRecord;
 import com.teragrep.cfe_39.configuration.Config;
 import com.teragrep.cfe_39.consumers.kafka.HdfsDataIngestion;
-import org.apache.avro.file.DataFileStream;
+import org.apache.avro.file.DataFileReader;
+import org.apache.avro.io.DatumReader;
 import org.apache.avro.specific.SpecificDatumReader;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.junit.jupiter.api.*;
@@ -59,7 +59,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.net.URI;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
@@ -132,7 +131,6 @@ public class Ingestion2NewFilesTest {
         FileUtil.fullyDelete(baseDir);
     }
 
-    @Disabled(value = "This needs refactoring")
     @DisabledIfSystemProperty(
             named = "skipIngestionTest",
             matches = "true"
@@ -140,8 +138,8 @@ public class Ingestion2NewFilesTest {
     @Test
     public void ingestion2NewFilesTest() {
         /* This test case is for testing the functionality of the ingestion when there are files already present in the database before starting ingestion.
-        14 records are inserted to HDFS database before starting ingestion, with 124/140 records in mock kafka consumer ready for ingestion.
-        Partitions through 1 to 9 will have only a single file, partition 0 will have 2 files (0.9 and 0.13) that are inserted to the database before starting ingestion.
+        14 records are inserted to HDFS database before starting ingestion, with 126/160 records in mock kafka consumer ready for ingestion (20 broken records + 14 records already in HDFS).
+        Partitions through 1 to 9 will have only a single temporary avro-file that isn't stored to HDFS (size too small), partition 0 will have 2 files (0.9 and 0.13) that are inserted to the database before starting ingestion.
         */
         assertDoesNotThrow(() -> {
             // Assert the known starting state.
@@ -155,441 +153,41 @@ public class Ingestion2NewFilesTest {
             Thread.sleep(10000);
             hdfsDataIngestion.run();
 
-            // Assert that the kafka records were ingested correctly and the database holds the expected 11 files holding the expected 140 records.
+            // Assert that the kafka records were ingested correctly and the database holds the expected 2 files.
             Assertions
-                    .assertEquals(11, fs.listStatus(new Path(config.getHdfsPath() + "/" + "testConsumerTopic")).length);
+                    .assertEquals(2, fs.listStatus(new Path(config.getHdfsPath() + "/" + "testConsumerTopic")).length);
             Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic" + "/" + "0.9")));
             Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic" + "/" + "0.13")));
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic" + "/" + "1.13")));
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic" + "/" + "2.13")));
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic" + "/" + "3.13")));
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic" + "/" + "4.13")));
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic" + "/" + "5.13")));
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic" + "/" + "6.13")));
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic" + "/" + "7.13")));
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic" + "/" + "8.13")));
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic" + "/" + "9.13")));
-        });
 
-        // Check that the files were properly written to HDFS.
-        String hdfsuri = config.getHdfsuri();
+            // Assert the avro-files that were too small to be stored in HDFS.
+            String path1 = config.getQueueDirectory() + "/" + "testConsumerTopic0.1";
+            File avroFile1 = new File(path1);
+            Assertions.assertTrue(avroFile1.exists());
+            DatumReader<SyslogRecord> datumReader1 = new SpecificDatumReader<>(SyslogRecord.class);
+            DataFileReader<SyslogRecord> reader1 = new DataFileReader<>(avroFile1, datumReader1);
+            Assertions.assertFalse(reader1.hasNext()); // Partition 0 avro-file should be empty.
+            reader1.close();
+            avroFile1.delete();
 
-        String path = config.getHdfsPath() + "/" + "testConsumerTopic";
-        // ====== Init HDFS File System Object
-        Configuration conf = new Configuration();
-        // Set FileSystem URI
-        conf.set("fs.defaultFS", hdfsuri);
-        // Because of Maven
-        conf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
-        conf.set("fs.file.impl", org.apache.hadoop.fs.LocalFileSystem.class.getName());
-        // Set HADOOP user
-        System.setProperty("HADOOP_USER_NAME", "hdfs");
-        System.setProperty("hadoop.home.dir", "/");
-        //Get the filesystem - HDFS
-        assertDoesNotThrow(() -> {
-            fs = FileSystem.get(URI.create(hdfsuri), conf);
-
-            Path workingDir = fs.getWorkingDirectory();
-            Path newDirectoryPath = new Path(path);
-            Assertions.assertTrue(fs.exists(newDirectoryPath));
-
-            /* This is the HDFS write path for the files:
-             Path hdfswritepath = new Path(newDirectoryPath + "/" + fileName); where newDirectoryPath is config.getHdfsPath() + "/" + lastObject.topic; and filename is lastObject.partition+"."+lastObject.offset;
-            
-             Create the list of files to read from HDFS. Test setup is created so each of the 1-9 partitions will have 1 file with offset of 13, while the 0th partition will have 2 files with offset 9 and 13.*/
             List<String> filenameList = new ArrayList<>();
-            filenameList.add("0.9");
-            filenameList.add("0.13");
-            for (int i = 1; i <= 9; i++) {
-                filenameList.add(i + "." + 13);
+            for (int partition = 1; partition <= 9; partition++) {
+                filenameList.add("testConsumerTopic" + partition + "." + 1);
             }
-            FileStatus[] fileStatuses = fs.listStatus(newDirectoryPath);
-            Assertions.assertEquals(filenameList.size(), fileStatuses.length);
-            for (FileStatus fileStatus : fileStatuses) {
-                Assertions.assertTrue(filenameList.contains(fileStatus.getPath().getName()));
-            }
-            LOGGER.info("All expected files present in HDFS.");
-
-            int partitionCounter = 0;
-
-            // Assertions for file testConsumerTopic/0.9
-            String fileName0 = filenameList.get(0);
-            Assertions.assertEquals("0.9", fileName0);
-            // Assert that file testConsumerTopic/0.9 has expected content.
-            LOGGER.info("Read file into hdfs");
-            //Create a path
-            Path hdfsreadpath = new Path(newDirectoryPath + "/" + fileName0); // The path should be the same that was used in writing the file to HDFS.
-            //Init input stream
-            FSDataInputStream inputStream = fs.open(hdfsreadpath);
-            //The data is in AVRO-format, so it can't be read as a string.
-            DataFileStream<SyslogRecord> reader = new DataFileStream<>(
-                    inputStream,
-                    new SpecificDatumReader<>(SyslogRecord.class)
-            );
-            SyslogRecord record = null;
-            LOGGER.info("\nReading records from file {}:", hdfsreadpath);
-
-            Assertions.assertTrue(reader.hasNext());
-            record = reader.next(record);
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug(record.toString());
-            }
-            Assertions
-                    .assertEquals(
-                            "{\"timestamp\": 1650872090804000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \""
-                                    + partitionCounter
-                                    + "\", \"offset\": 0, \"origin\": \"jla-02.default\", \"payload\": \"[WARN] 2022-04-25 07:34:50,804 com.teragrep.jla_02.Log4j Log - Log4j warn says hi!\"}",
-                            record.toString()
-                    );
-
-            Assertions.assertTrue(reader.hasNext());
-            record = reader.next(record);
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug(record.toString());
-            }
-            Assertions
-                    .assertEquals(
-                            "{\"timestamp\": 1650872090806000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \""
-                                    + partitionCounter
-                                    + "\", \"offset\": 1, \"origin\": \"jla-02.default\", \"payload\": \"[ERROR] 2022-04-25 07:34:50,806 com.teragrep.jla_02.Log4j Log - Log4j error says hi!\"}",
-                            record.toString()
-                    );
-
-            Assertions.assertTrue(reader.hasNext());
-            record = reader.next(record);
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug(record.toString());
-            }
-            Assertions
-                    .assertEquals(
-                            "{\"timestamp\": 1650872090822000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \""
-                                    + partitionCounter
-                                    + "\", \"offset\": 2, \"origin\": \"jla-02\", \"payload\": \"470647  [Thread-3] INFO  com.teragrep.jla_02.Logback Daily - Logback-daily says hi.\"}",
-                            record.toString()
-                    );
-
-            Assertions.assertTrue(reader.hasNext());
-            record = reader.next(record);
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug(record.toString());
-            }
-            Assertions
-                    .assertEquals(
-                            "{\"timestamp\": 1650872090822000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \""
-                                    + partitionCounter
-                                    + "\", \"offset\": 3, \"origin\": \"jla-02\", \"payload\": \"470646  [Thread-3] INFO  com.teragrep.jla_02.Logback Audit - Logback-audit says hi.\"}",
-                            record.toString()
-                    );
-
-            Assertions.assertTrue(reader.hasNext());
-            record = reader.next(record);
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug(record.toString());
-            }
-            Assertions
-                    .assertEquals(
-                            "{\"timestamp\": 1650872090822000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \""
-                                    + partitionCounter
-                                    + "\", \"offset\": 4, \"origin\": \"jla-02\", \"payload\": \"470647  [Thread-3] INFO  com.teragrep.jla_02.Logback Metric - Logback-metric says hi.\"}",
-                            record.toString()
-                    );
-
-            Assertions.assertTrue(reader.hasNext());
-            record = reader.next(record);
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug(record.toString());
-            }
-            Assertions
-                    .assertEquals(
-                            "{\"timestamp\": 1650872092238000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \""
-                                    + partitionCounter
-                                    + "\", \"offset\": 5, \"origin\": \"jla-02.default\", \"payload\": \"25.04.2022 07:34:52.238 [INFO] com.teragrep.jla_02.Log4j2 [instanceId=01, thread=Thread-0, userId=, sessionId=, requestId=, SUBJECT=, VERB=, OBJECT=, OUTCOME=, message=Log4j2 info audit says hi!]\"}",
-                            record.toString()
-                    );
-
-            Assertions.assertTrue(reader.hasNext());
-            record = reader.next(record);
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug(record.toString());
-            }
-            Assertions
-                    .assertEquals(
-                            "{\"timestamp\": 1650872092239000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \""
-                                    + partitionCounter
-                                    + "\", \"offset\": 6, \"origin\": \"jla-02.default\", \"payload\": \"25.04.2022 07:34:52.239 [INFO] com.teragrep.jla_02.Log4j2 [instanceId=01, thread=Thread-0, userId=, sessionId=, requestId=, SUBJECT=, VERB=, OBJECT=, OUTCOME=, message=Log4j2 info daily says hi!]\"}",
-                            record.toString()
-                    );
-
-            Assertions.assertTrue(reader.hasNext());
-            record = reader.next(record);
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug(record.toString());
-            }
-            Assertions
-                    .assertEquals(
-                            "{\"timestamp\": 1650872092239000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \""
-                                    + partitionCounter
-                                    + "\", \"offset\": 7, \"origin\": \"jla-02.default\", \"payload\": \"25.04.2022 07:34:52.239 [INFO] com.teragrep.jla_02.Log4j2 [instanceId=01, thread=Thread-0, userId=, sessionId=, requestId=, SUBJECT=, VERB=, OBJECT=, OUTCOME=, message=Log4j2 info metric says hi!]\"}",
-                            record.toString()
-                    );
-
-            Assertions.assertTrue(reader.hasNext());
-            record = reader.next(record);
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug(record.toString());
-            }
-            Assertions
-                    .assertEquals(
-                            "{\"timestamp\": 1650872092240000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \""
-                                    + partitionCounter
-                                    + "\", \"offset\": 8, \"origin\": \"jla-02.default\", \"payload\": \"25.04.2022 07:34:52.240 [WARN] com.teragrep.jla_02.Log4j2 [instanceId=01, thread=Thread-0, userId=, sessionId=, requestId=, SUBJECT=, VERB=, OBJECT=, OUTCOME=, message=Log4j2 warn audit says hi!]\"}",
-                            record.toString()
-                    );
-
-            Assertions.assertTrue(reader.hasNext());
-            record = reader.next(record);
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug(record.toString());
-            }
-            Assertions
-                    .assertEquals(
-                            "{\"timestamp\": 1650872092240000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \""
-                                    + partitionCounter
-                                    + "\", \"offset\": 9, \"origin\": \"jla-02.default\", \"payload\": \"25.04.2022 07:34:52.240 [WARN] com.teragrep.jla_02.Log4j2 [instanceId=01, thread=Thread-0, userId=, sessionId=, requestId=, SUBJECT=, VERB=, OBJECT=, OUTCOME=, message=Log4j2 warn daily says hi!]\"}",
-                            record.toString()
-                    );
-
-            Assertions.assertFalse(reader.hasNext()); // Reached the end of the testConsumerTopic/0.9 file.
-            inputStream.close();
-            filenameList.remove(0);
-
-            // Assertions for file testConsumerTopic/0.13
-            fileName0 = filenameList.get(0);
-            Assertions.assertEquals("0.13", fileName0);
-            LOGGER.info("Read file into hdfs");
-            //Create a path
-            hdfsreadpath = new Path(newDirectoryPath + "/" + fileName0); // The path should be the same that was used in writing the file to HDFS.
-            //Init input stream
-            inputStream = fs.open(hdfsreadpath);
-            //The data is in AVRO-format, so it can't be read as a string.
-            reader = new DataFileStream<>(inputStream, new SpecificDatumReader<>(SyslogRecord.class));
-            record = null;
-            LOGGER.info("\nReading records from file {}:", hdfsreadpath);
-
-            Assertions.assertTrue(reader.hasNext());
-            record = reader.next(record);
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug(record.toString());
-            }
-            Assertions
-                    .assertEquals(
-                            "{\"timestamp\": 1650872092241000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \""
-                                    + partitionCounter
-                                    + "\", \"offset\": 10, \"origin\": \"jla-02.default\", \"payload\": \"25.04.2022 07:34:52.241 [WARN] com.teragrep.jla_02.Log4j2 [instanceId=01, thread=Thread-0, userId=, sessionId=, requestId=, SUBJECT=, VERB=, OBJECT=, OUTCOME=, message=Log4j2 warn metric says hi!]\"}",
-                            record.toString()
-                    );
-
-            Assertions.assertTrue(reader.hasNext());
-            record = reader.next(record);
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug(record.toString());
-            }
-            Assertions
-                    .assertEquals(
-                            "{\"timestamp\": 1650872092241000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \""
-                                    + partitionCounter
-                                    + "\", \"offset\": 11, \"origin\": \"jla-02.default\", \"payload\": \"25.04.2022 07:34:52.241 [ERROR] com.teragrep.jla_02.Log4j2 [instanceId=01, thread=Thread-0, userId=, sessionId=, requestId=, SUBJECT=, VERB=, OBJECT=, OUTCOME=, message=Log4j2 error audit says hi!]\"}",
-                            record.toString()
-                    );
-
-            Assertions.assertTrue(reader.hasNext());
-            record = reader.next(record);
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug(record.toString());
-            }
-            Assertions
-                    .assertEquals(
-                            "{\"timestamp\": 1650872092242000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \""
-                                    + partitionCounter
-                                    + "\", \"offset\": 12, \"origin\": \"jla-02.default\", \"payload\": \"25.04.2022 07:34:52.242 [ERROR] com.teragrep.jla_02.Log4j2 [instanceId=01, thread=Thread-0, userId=, sessionId=, requestId=, SUBJECT=, VERB=, OBJECT=, OUTCOME=, message=Log4j2 error daily says hi!]\"}",
-                            record.toString()
-                    );
-
-            Assertions.assertTrue(reader.hasNext());
-            record = reader.next(record);
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug(record.toString());
-            }
-            Assertions
-                    .assertEquals(
-                            "{\"timestamp\": 1650872092243000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \""
-                                    + partitionCounter
-                                    + "\", \"offset\": 13, \"origin\": \"jla-02.default\", \"payload\": \"25.04.2022 07:34:52.243 [ERROR] com.teragrep.jla_02.Log4j2 [instanceId=01, thread=Thread-0, userId=, sessionId=, requestId=, SUBJECT=, VERB=, OBJECT=, OUTCOME=, message=Log4j2 error metric says hi!]\"}",
-                            record.toString()
-                    );
-            Assertions.assertFalse(reader.hasNext()); // Reached the end of the testConsumerTopic/0.13 file.
-            inputStream.close();
-            filenameList.remove(0);
-
-            partitionCounter++;
-
             for (String fileName : filenameList) {
-                //==== Read files
-                LOGGER.info("Read file into hdfs");
-                //Create a path
-                hdfsreadpath = new Path(newDirectoryPath + "/" + fileName); // The path should be the same that was used in writing the file to HDFS.
-                //Init input stream
-                inputStream = fs.open(hdfsreadpath);
-                //The data is in AVRO-format, so it can't be read as a string.
-                reader = new DataFileStream<>(inputStream, new SpecificDatumReader<>(SyslogRecord.class));
-                record = null;
-                LOGGER.info("\nReading records from file {}:", hdfsreadpath);
-
-                Assertions.assertTrue(reader.hasNext());
-                record = reader.next(record);
-                Assertions
-                        .assertEquals(
-                                "{\"timestamp\": 1650872090804000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \""
-                                        + partitionCounter
-                                        + "\", \"offset\": 0, \"origin\": \"jla-02.default\", \"payload\": \"[WARN] 2022-04-25 07:34:50,804 com.teragrep.jla_02.Log4j Log - Log4j warn says hi!\"}",
-                                record.toString()
-                        );
-
-                Assertions.assertTrue(reader.hasNext());
-                record = reader.next(record);
-                Assertions
-                        .assertEquals(
-                                "{\"timestamp\": 1650872090806000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \""
-                                        + partitionCounter
-                                        + "\", \"offset\": 1, \"origin\": \"jla-02.default\", \"payload\": \"[ERROR] 2022-04-25 07:34:50,806 com.teragrep.jla_02.Log4j Log - Log4j error says hi!\"}",
-                                record.toString()
-                        );
-
-                Assertions.assertTrue(reader.hasNext());
-                record = reader.next(record);
-                Assertions
-                        .assertEquals(
-                                "{\"timestamp\": 1650872090822000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \""
-                                        + partitionCounter
-                                        + "\", \"offset\": 2, \"origin\": \"jla-02\", \"payload\": \"470647  [Thread-3] INFO  com.teragrep.jla_02.Logback Daily - Logback-daily says hi.\"}",
-                                record.toString()
-                        );
-
-                Assertions.assertTrue(reader.hasNext());
-                record = reader.next(record);
-                Assertions
-                        .assertEquals(
-                                "{\"timestamp\": 1650872090822000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \""
-                                        + partitionCounter
-                                        + "\", \"offset\": 3, \"origin\": \"jla-02\", \"payload\": \"470646  [Thread-3] INFO  com.teragrep.jla_02.Logback Audit - Logback-audit says hi.\"}",
-                                record.toString()
-                        );
-
-                Assertions.assertTrue(reader.hasNext());
-                record = reader.next(record);
-                Assertions
-                        .assertEquals(
-                                "{\"timestamp\": 1650872090822000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \""
-                                        + partitionCounter
-                                        + "\", \"offset\": 4, \"origin\": \"jla-02\", \"payload\": \"470647  [Thread-3] INFO  com.teragrep.jla_02.Logback Metric - Logback-metric says hi.\"}",
-                                record.toString()
-                        );
-
-                Assertions.assertTrue(reader.hasNext());
-                record = reader.next(record);
-                Assertions
-                        .assertEquals(
-                                "{\"timestamp\": 1650872092238000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \""
-                                        + partitionCounter
-                                        + "\", \"offset\": 5, \"origin\": \"jla-02.default\", \"payload\": \"25.04.2022 07:34:52.238 [INFO] com.teragrep.jla_02.Log4j2 [instanceId=01, thread=Thread-0, userId=, sessionId=, requestId=, SUBJECT=, VERB=, OBJECT=, OUTCOME=, message=Log4j2 info audit says hi!]\"}",
-                                record.toString()
-                        );
-
-                Assertions.assertTrue(reader.hasNext());
-                record = reader.next(record);
-                Assertions
-                        .assertEquals(
-                                "{\"timestamp\": 1650872092239000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \""
-                                        + partitionCounter
-                                        + "\", \"offset\": 6, \"origin\": \"jla-02.default\", \"payload\": \"25.04.2022 07:34:52.239 [INFO] com.teragrep.jla_02.Log4j2 [instanceId=01, thread=Thread-0, userId=, sessionId=, requestId=, SUBJECT=, VERB=, OBJECT=, OUTCOME=, message=Log4j2 info daily says hi!]\"}",
-                                record.toString()
-                        );
-
-                Assertions.assertTrue(reader.hasNext());
-                record = reader.next(record);
-                Assertions
-                        .assertEquals(
-                                "{\"timestamp\": 1650872092239000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \""
-                                        + partitionCounter
-                                        + "\", \"offset\": 7, \"origin\": \"jla-02.default\", \"payload\": \"25.04.2022 07:34:52.239 [INFO] com.teragrep.jla_02.Log4j2 [instanceId=01, thread=Thread-0, userId=, sessionId=, requestId=, SUBJECT=, VERB=, OBJECT=, OUTCOME=, message=Log4j2 info metric says hi!]\"}",
-                                record.toString()
-                        );
-
-                Assertions.assertTrue(reader.hasNext());
-                record = reader.next(record);
-                Assertions
-                        .assertEquals(
-                                "{\"timestamp\": 1650872092240000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \""
-                                        + partitionCounter
-                                        + "\", \"offset\": 8, \"origin\": \"jla-02.default\", \"payload\": \"25.04.2022 07:34:52.240 [WARN] com.teragrep.jla_02.Log4j2 [instanceId=01, thread=Thread-0, userId=, sessionId=, requestId=, SUBJECT=, VERB=, OBJECT=, OUTCOME=, message=Log4j2 warn audit says hi!]\"}",
-                                record.toString()
-                        );
-
-                Assertions.assertTrue(reader.hasNext());
-                record = reader.next(record);
-                Assertions
-                        .assertEquals(
-                                "{\"timestamp\": 1650872092240000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \""
-                                        + partitionCounter
-                                        + "\", \"offset\": 9, \"origin\": \"jla-02.default\", \"payload\": \"25.04.2022 07:34:52.240 [WARN] com.teragrep.jla_02.Log4j2 [instanceId=01, thread=Thread-0, userId=, sessionId=, requestId=, SUBJECT=, VERB=, OBJECT=, OUTCOME=, message=Log4j2 warn daily says hi!]\"}",
-                                record.toString()
-                        );
-
-                Assertions.assertTrue(reader.hasNext());
-                record = reader.next(record);
-                Assertions
-                        .assertEquals(
-                                "{\"timestamp\": 1650872092241000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \""
-                                        + partitionCounter
-                                        + "\", \"offset\": 10, \"origin\": \"jla-02.default\", \"payload\": \"25.04.2022 07:34:52.241 [WARN] com.teragrep.jla_02.Log4j2 [instanceId=01, thread=Thread-0, userId=, sessionId=, requestId=, SUBJECT=, VERB=, OBJECT=, OUTCOME=, message=Log4j2 warn metric says hi!]\"}",
-                                record.toString()
-                        );
-
-                Assertions.assertTrue(reader.hasNext());
-                record = reader.next(record);
-                Assertions
-                        .assertEquals(
-                                "{\"timestamp\": 1650872092241000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \""
-                                        + partitionCounter
-                                        + "\", \"offset\": 11, \"origin\": \"jla-02.default\", \"payload\": \"25.04.2022 07:34:52.241 [ERROR] com.teragrep.jla_02.Log4j2 [instanceId=01, thread=Thread-0, userId=, sessionId=, requestId=, SUBJECT=, VERB=, OBJECT=, OUTCOME=, message=Log4j2 error audit says hi!]\"}",
-                                record.toString()
-                        );
-
-                Assertions.assertTrue(reader.hasNext());
-                record = reader.next(record);
-                Assertions
-                        .assertEquals(
-                                "{\"timestamp\": 1650872092242000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \""
-                                        + partitionCounter
-                                        + "\", \"offset\": 12, \"origin\": \"jla-02.default\", \"payload\": \"25.04.2022 07:34:52.242 [ERROR] com.teragrep.jla_02.Log4j2 [instanceId=01, thread=Thread-0, userId=, sessionId=, requestId=, SUBJECT=, VERB=, OBJECT=, OUTCOME=, message=Log4j2 error daily says hi!]\"}",
-                                record.toString()
-                        );
-
-                Assertions.assertTrue(reader.hasNext());
-                record = reader.next(record);
-                Assertions
-                        .assertEquals(
-                                "{\"timestamp\": 1650872092243000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \""
-                                        + partitionCounter
-                                        + "\", \"offset\": 13, \"origin\": \"jla-02.default\", \"payload\": \"25.04.2022 07:34:52.243 [ERROR] com.teragrep.jla_02.Log4j2 [instanceId=01, thread=Thread-0, userId=, sessionId=, requestId=, SUBJECT=, VERB=, OBJECT=, OUTCOME=, message=Log4j2 error metric says hi!]\"}",
-                                record.toString()
-                        );
+                String path2 = config.getQueueDirectory() + "/" + fileName;
+                File avroFile = new File(path2);
+                Assertions.assertTrue(filenameList.contains(avroFile.getName()));
+                DatumReader<SyslogRecord> datumReader = new SpecificDatumReader<>(SyslogRecord.class);
+                DataFileReader<SyslogRecord> reader = new DataFileReader<>(avroFile, datumReader);
+                for (int offset = 0; offset <= 13; offset++) {
+                    Assertions.assertTrue(reader.hasNext());
+                    SyslogRecord record = reader.next();
+                    Assertions.assertEquals(offset, record.getOffset());
+                }
                 Assertions.assertFalse(reader.hasNext());
-                LOGGER.info("Partition {} passed assertions.", partitionCounter);
-                partitionCounter++;
-                inputStream.close();
+                reader.close();
+                avroFile.delete();
             }
-            Assertions.assertEquals(10, partitionCounter);
         });
     }
 }
