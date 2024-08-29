@@ -80,6 +80,9 @@ public class PartitionFileImpl implements PartitionFile {
         try (SyslogAvroWriter syslogAvroWriter = new SyslogAvroWriter(syslogFile)) {
             // Initializes the syslogFile.
         }
+        if(LOGGER.isDebugEnabled()) {
+            LOGGER.debug("PartitionFileImpl representing topic {} partition {} initialized successfully. syslogFile allocated to the object is located at {}", topicPartition.get("topic").getAsString(), topicPartition.get("partition").getAsString(), syslogFile.getPath());
+        }
     }
 
     @Override
@@ -105,10 +108,16 @@ public class PartitionFileImpl implements PartitionFile {
         }
         // Store the last offset of the batch to a list.
         if (storedOffset > 0) {
+            if(LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Kafka Batch for topic {} partition {} processed successfully. Final record offset of the batch was {}.", topicPartition.get("topic").getAsString(), topicPartition.get("partition").getAsString(), storedOffset);
+            }
             batchOffsets.add(storedOffset);
         }
         // No records mean consumer group rebalance happened, write file to HDFS.
         if (syslogRecordList.isEmpty()) {
+            if(LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Kafka Batch for topic {} partition {} was empty. Final record offset of the batch was {}. Proceeding to write the existing syslogFile to HDFS.", topicPartition.get("topic").getAsString(), topicPartition.get("partition").getAsString(), storedOffset);
+            }
             writeToHdfsEarly();
         }
     }
@@ -122,6 +131,9 @@ public class PartitionFileImpl implements PartitionFile {
 
     @Override
     public void rebalance() {
+        if(LOGGER.isDebugEnabled()) {
+            LOGGER.debug("PartitionFileImpl-object representing topic {} partition {} was notified of consumer group rebalance. Deleting syslogFile allocated to the object at {}", topicPartition.get("topic").getAsString(), topicPartition.get("partition").getAsString(), syslogFile.getPath());
+        }
         syslogFile.delete();
     }
 
@@ -137,6 +149,9 @@ public class PartitionFileImpl implements PartitionFile {
             // NoOp, syslogAvroWriter has initialized the empty AVRO-file.
         }
         batchOffsets.clear();
+        if(LOGGER.isDebugEnabled()) {
+            LOGGER.debug("SyslogFile representing topic {} partition {} stored to HDFS with offset value of {}. SyslogFile allocated to the object is located at {}", topicPartition.get("topic").getAsString(), topicPartition.get("partition").getAsString(), offset, syslogFile.getPath());
+        }
     }
 
 }
