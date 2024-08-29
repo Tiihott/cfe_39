@@ -45,11 +45,15 @@
  */
 package com.teragrep.cfe_39;
 
+import com.teragrep.cfe_39.avro.SyslogRecord;
 import com.teragrep.cfe_39.configuration.Config;
 import com.teragrep.cfe_39.consumers.kafka.BatchDistributionImpl;
 import com.teragrep.cfe_39.consumers.kafka.KafkaRecordImpl;
 import com.teragrep.cfe_39.metrics.DurationStatistics;
 import com.teragrep.cfe_39.metrics.topic.TopicCounter;
+import org.apache.avro.file.DataFileReader;
+import org.apache.avro.io.DatumReader;
+import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
@@ -147,6 +151,19 @@ public class ProcessingFailureTest {
             Assertions.assertEquals("com.teragrep.rlo_06.PriorityParseException: PRIORITY < missing", e.getMessage());
             Assertions.assertFalse(fs.exists(new Path(config.getHdfsPath() + "/" + "topicName" + "/" + "0.1")));
             // No files stored to hdfs.
+
+            // Assert the local avro file that should e empty.
+            File queueDirectory = new File(config.getQueueDirectory());
+            File[] files = queueDirectory.listFiles();
+            Assertions.assertEquals(1, files.length);
+            String path2 = config.getQueueDirectory() + "/" + "topicName0.1";
+            File avroFile = new File(path2);
+            Assertions.assertTrue(avroFile.exists());
+            DatumReader<SyslogRecord> datumReader = new SpecificDatumReader<>(SyslogRecord.class);
+            DataFileReader<SyslogRecord> reader = new DataFileReader<>(avroFile, datumReader);
+            Assertions.assertFalse(reader.hasNext());
+            reader.close();
+            avroFile.delete();
         });
 
     }
@@ -194,6 +211,19 @@ public class ProcessingFailureTest {
                     );
             Assertions.assertFalse(fs.exists(new Path(config.getHdfsPath() + "/" + "topicName" + "/" + "0.1")));
             // No files stored to hdfs.
+
+            // Assert the local avro file that should e empty.
+            File queueDirectory = new File(config.getQueueDirectory());
+            File[] files = queueDirectory.listFiles();
+            Assertions.assertEquals(1, files.length);
+            String path2 = config.getQueueDirectory() + "/" + "topicName0.1";
+            File avroFile = new File(path2);
+            Assertions.assertTrue(avroFile.exists());
+            DatumReader<SyslogRecord> datumReader = new SpecificDatumReader<>(SyslogRecord.class);
+            DataFileReader<SyslogRecord> reader = new DataFileReader<>(avroFile, datumReader);
+            Assertions.assertFalse(reader.hasNext());
+            reader.close();
+            avroFile.delete();
         });
 
     }

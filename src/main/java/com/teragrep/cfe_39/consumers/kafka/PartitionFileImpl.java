@@ -77,6 +77,9 @@ public class PartitionFileImpl implements PartitionFile {
         this.topicPartition = topicPartition;
         this.batchOffsets = new ArrayList<>();
         this.partitionRecords = new PartitionRecordsImpl(config);
+        try (SyslogAvroWriter syslogAvroWriter = new SyslogAvroWriter(syslogFile)) {
+            // Initializes the syslogFile.
+        }
     }
 
     @Override

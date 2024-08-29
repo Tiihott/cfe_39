@@ -116,7 +116,7 @@ public class Ingestion0FilesTest {
             hdfsDataIngestion.run();
         });
 
-        // Assert that the kafka records were ingested correctly and the database holds the correct 140 records (20 broken records were skipped).
+        // Assert that the kafka records were ingested correctly and the database/temporary file holds the correct 140 records (20 broken records were skipped).
         assertDoesNotThrow(() -> {
             String path = config.getHdfsPath() + "/" + "testConsumerTopic";
             Path newDirectoryPath = new Path(path);
