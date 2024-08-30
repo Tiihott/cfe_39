@@ -209,8 +209,7 @@ public class HdfsDataIngestion {
 
         /* Every consumer is run in a separate thread.
          Consumer group is also handled here, and each consumer of the group runs on separate thread.*/
-        int numOfThreads = Math.min(numOfConsumers, listPartitionInfo.size()); // FIXME: Alter the equation for calculating the number of threads.
-        for (int threadId = 1; numOfThreads >= threadId; threadId++) {
+        for (int threadId = 1; numOfConsumers >= threadId; threadId++) {
             BatchDistributionImpl output = new BatchDistributionImpl(
                     config, // Configuration settings
                     topic, // String, the name of the topic
