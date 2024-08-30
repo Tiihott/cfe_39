@@ -265,45 +265,34 @@ public class MockKafkaConsumerFactory {
         // generate the topic partitions and metadata first
         for (int i = 0; i < amountofloops; i++) {
             TopicPartition topicPartition = new TopicPartition("testConsumerTopic", i);
-            topicPartitions.add(topicPartition);
-            beginningOffsets.put(topicPartition, 0L);
-            endOffsets.put(topicPartition, 14L);
-            mockPartitionInfo.add(new PartitionInfo("testConsumerTopic", i, null, null, null));
+            if (threadnum == 1) {
+                if (((i + 1) % 2) == 0) {
+                    topicPartitions.add(topicPartition);
+                    beginningOffsets.put(topicPartition, 0L);
+                    endOffsets.put(topicPartition, 14L);
+                    mockPartitionInfo.add(new PartitionInfo("testConsumerTopic", i, null, null, null));
+                }
+            }
+            else if (threadnum == 2) {
+                if (((i + 1) % 2) != 0) {
+                    topicPartitions.add(topicPartition);
+                    beginningOffsets.put(topicPartition, 0L);
+                    endOffsets.put(topicPartition, 14L);
+                    mockPartitionInfo.add(new PartitionInfo("testConsumerTopic", i, null, null, null));
+                }
+            }
+            else {
+                topicPartitions.add(topicPartition);
+                beginningOffsets.put(topicPartition, 0L);
+                endOffsets.put(topicPartition, 14L);
+                mockPartitionInfo.add(new PartitionInfo("testConsumerTopic", i, null, null, null));
+            }
         }
 
-        if (threadnum == 1) {
-            List<TopicPartition> oddTopicPartitions = new ArrayList<>();
-            for (TopicPartition a : topicPartitions) {
-                if (((a.partition() + 1) % 2) == 0) {
-                    oddTopicPartitions.add(a);
-                }
-            }
-            consumer.assign(oddTopicPartitions); // assign
-            for (TopicPartition a : topicPartitions) {
-                if (((a.partition() + 1) % 2) == 0) {
-                    generateEvents(consumer, a.topic(), a.partition());
-                }
-            }
-        }
-        else if (threadnum == 2) {
-            List<TopicPartition> evenTopicPartitions = new ArrayList<>();
-            for (TopicPartition a : topicPartitions) {
-                if (((a.partition() + 1) % 2) != 0) {
-                    evenTopicPartitions.add(a);
-                }
-            }
-            consumer.assign(evenTopicPartitions); // assign
-            for (TopicPartition a : topicPartitions) {
-                if (((a.partition() + 1) % 2) != 0) {
-                    generateEvents(consumer, a.topic(), a.partition());
-                }
-            }
-        }
-        else {
-            consumer.assign(topicPartitions); // assign
-            for (TopicPartition a : topicPartitions) {
-                generateEvents(consumer, a.topic(), a.partition());
-            }
+        consumer.subscribe(Collections.singletonList("testConsumerTopic"));
+        consumer.rebalance(topicPartitions);
+        for (TopicPartition a : topicPartitions) {
+            generateEvents(consumer, a.topic(), a.partition());
         }
 
         consumer.updateBeginningOffsets(beginningOffsets);

@@ -47,28 +47,55 @@ package com.teragrep.cfe_39.consumers.kafka;
 
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
-public class IngestionRebalanceListener implements ConsumerRebalanceListener {
+public class ConsumerRebalanceListenerImpl implements ConsumerRebalanceListener {
 
+    private final Logger LOGGER = LoggerFactory.getLogger(ConsumerRebalanceListenerImpl.class);
     private final Consumer<byte[], byte[]> kafkaConsumer;
     private final BatchDistributionImpl callbackFunction;
+    private final Map<TopicPartition, OffsetAndMetadata> currentOffsets = new HashMap<>();
 
-    public IngestionRebalanceListener(Consumer<byte[], byte[]> kafkaConsumer, BatchDistributionImpl callbackFunction) {
+    public ConsumerRebalanceListenerImpl(
+            Consumer<byte[], byte[]> kafkaConsumer,
+            BatchDistributionImpl callbackFunction
+    ) {
         this.kafkaConsumer = kafkaConsumer;
         this.callbackFunction = callbackFunction;
+    }
+
+    public void addOffsetToTrack(String topic, int partition, long offset) {
+        currentOffsets.put(new TopicPartition(topic, partition), new OffsetAndMetadata(offset + 1, null));
+        // 1. Add listener to be an input parameter for callbackFunction.accept() call.
+        // 2. Call the addOffsetToTrack() every time a file is stored to HDFS.
+        // 3. Finally remove the try/catch from BatchDistributionImpl and instead let the KafkaReader to try/catch the exception.
+        // 4. In KafkaReader commit the offsets using the listener's getCurrentOffsets() method, and then re-throw the exception.
+    }
+
+    // this is used when we shut down our consumer gracefully
+    public Map<TopicPartition, OffsetAndMetadata> getCurrentOffsets() {
+        return currentOffsets;
     }
 
     @Override
     public void onPartitionsRevoked(Collection<TopicPartition> collection) {
         // Flush any records from the temporary files to HDFS to synchronize database with committed kafka offsets, and clean up PartitionFile list.
+        LOGGER.info("onPartitionsRevoked triggered");
         callbackFunction.rebalance();
+        LOGGER.info("Committing offsets <{}>", currentOffsets);
+        kafkaConsumer.commitSync(currentOffsets);
     }
 
     @Override
     public void onPartitionsAssigned(Collection<TopicPartition> collection) {
+        LOGGER.info("onPartitionsAssigned triggered");
         // NoOp: records and offsets are already stored to HDFS by the callbackFunction.rebalance(), and kafka coordinator should handle committed offsets automatically.
     }
 }

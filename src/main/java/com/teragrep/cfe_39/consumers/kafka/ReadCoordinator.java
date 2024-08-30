@@ -83,16 +83,23 @@ public class ReadCoordinator implements Runnable {
     ) {
 
         org.apache.kafka.clients.consumer.Consumer<byte[], byte[]> kafkaConsumer;
+        ConsumerRebalanceListenerImpl consumerRebalanceListenerImpl;
         if (useMockKafkaConsumer) { // Mock kafka consumer is enabled, create mock consumers with assigned partitions that are not overlapping with each other.
             String name = Thread.currentThread().getName(); // Use thread name to identify which thread is running the code.
             if (Objects.equals(name, "testConsumerTopic1")) {
                 kafkaConsumer = MockKafkaConsumerFactory.getConsumer(1); // creates a Kafka MockConsumer that has the odd numbered partitions assigned to it.
+                consumerRebalanceListenerImpl = new ConsumerRebalanceListenerImpl(kafkaConsumer, callbackFunction);
+                kafkaConsumer.subscribe(Collections.singletonList(topic), consumerRebalanceListenerImpl);
             }
             else if (Objects.equals(name, "testConsumerTopic2")) {
                 kafkaConsumer = MockKafkaConsumerFactory.getConsumer(2); // creates a Kafka MockConsumer that has the even numbered partitions assigned to it.
+                consumerRebalanceListenerImpl = new ConsumerRebalanceListenerImpl(kafkaConsumer, callbackFunction);
+                kafkaConsumer.subscribe(Collections.singletonList(topic), consumerRebalanceListenerImpl);
             }
             else {
                 kafkaConsumer = MockKafkaConsumerFactory.getConsumer(0); // Creates a single Kafka MockConsumer that has all the partitions assigned to it.
+                consumerRebalanceListenerImpl = new ConsumerRebalanceListenerImpl(kafkaConsumer, callbackFunction);
+                kafkaConsumer.subscribe(Collections.singletonList(topic), consumerRebalanceListenerImpl);
             }
         }
         else { // Mock kafka consumer is disabled, subscribe method should handle assigning the partitions automatically to the consumer based on group id parameters of readerKafkaProperties.
@@ -101,7 +108,8 @@ public class ReadCoordinator implements Runnable {
                     new ByteArrayDeserializer(),
                     new ByteArrayDeserializer()
             );
-            kafkaConsumer.subscribe(Collections.singletonList(topic));
+            consumerRebalanceListenerImpl = new ConsumerRebalanceListenerImpl(kafkaConsumer, callbackFunction);
+            kafkaConsumer.subscribe(Collections.singletonList(topic), consumerRebalanceListenerImpl);
         }
 
         Set<TopicPartition> assignment = kafkaConsumer.assignment();
@@ -115,7 +123,7 @@ public class ReadCoordinator implements Runnable {
             }
         }
 
-        return new KafkaReader(kafkaConsumer, callbackFunction);
+        return new KafkaReader(kafkaConsumer, callbackFunction, consumerRebalanceListenerImpl);
     }
 
     // Part or Runnable implementation, called when the thread is started.

@@ -58,12 +58,16 @@ public class KafkaReader implements AutoCloseable {
     private final Logger LOGGER = LoggerFactory.getLogger(KafkaReader.class);
     private final Consumer<byte[], byte[]> kafkaConsumer;
     private final BatchDistributionImpl callbackFunction;
-    private final IngestionRebalanceListener ingestionRebalanceListener;
+    private final ConsumerRebalanceListenerImpl consumerRebalanceListenerImpl;
 
-    public KafkaReader(Consumer<byte[], byte[]> kafkaConsumer, BatchDistributionImpl callbackFunction) {
+    public KafkaReader(
+            Consumer<byte[], byte[]> kafkaConsumer,
+            BatchDistributionImpl callbackFunction,
+            ConsumerRebalanceListenerImpl consumerRebalanceListenerImpl
+    ) {
         this.kafkaConsumer = kafkaConsumer;
         this.callbackFunction = callbackFunction;
-        this.ingestionRebalanceListener = new IngestionRebalanceListener(this.kafkaConsumer, this.callbackFunction);
+        this.consumerRebalanceListenerImpl = consumerRebalanceListenerImpl;
     }
 
     public void read() {
