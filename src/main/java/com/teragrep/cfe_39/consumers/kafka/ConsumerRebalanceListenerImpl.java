@@ -61,7 +61,7 @@ public class ConsumerRebalanceListenerImpl implements ConsumerRebalanceListener 
     private final Logger LOGGER = LoggerFactory.getLogger(ConsumerRebalanceListenerImpl.class);
     private final Consumer<byte[], byte[]> kafkaConsumer;
     private final BatchDistributionImpl callbackFunction;
-    private final Map<TopicPartition, OffsetAndMetadata> currentOffsets = new HashMap<>();
+    private final Map<TopicPartition, OffsetAndMetadata> currentOffsets;
 
     public ConsumerRebalanceListenerImpl(
             Consumer<byte[], byte[]> kafkaConsumer,
@@ -69,11 +69,12 @@ public class ConsumerRebalanceListenerImpl implements ConsumerRebalanceListener 
     ) {
         this.kafkaConsumer = kafkaConsumer;
         this.callbackFunction = callbackFunction;
+        this.currentOffsets = new HashMap<>();
     }
 
     public void addOffsetToTrack(String topic, int partition, long offset) {
         currentOffsets.put(new TopicPartition(topic, partition), new OffsetAndMetadata(offset + 1, null));
-        // 1. Add listener to be an input parameter for callbackFunction.accept() call.
+        // 1. Pass listener to callbackFunction.
         // 2. Call the addOffsetToTrack() every time a file is stored to HDFS.
         // 3. Finally remove the try/catch from BatchDistributionImpl and instead let the KafkaReader to try/catch the exception.
         // 4. In KafkaReader commit the offsets using the listener's getCurrentOffsets() method, and then re-throw the exception.
