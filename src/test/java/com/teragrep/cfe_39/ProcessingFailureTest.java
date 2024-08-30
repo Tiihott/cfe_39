@@ -72,7 +72,6 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
@@ -123,7 +122,7 @@ public class ProcessingFailureTest {
 
         assertDoesNotThrow(() -> {
 
-            Consumer<List<KafkaRecordImpl>> output = new BatchDistributionImpl(
+            BatchDistributionImpl output = new BatchDistributionImpl(
                     config, // Configuration settings
                     "topicName", // String, the name of the topic
                     durationStatistics, // RuntimeStatistics object from metrics
@@ -179,7 +178,7 @@ public class ProcessingFailureTest {
 
         assertDoesNotThrow(() -> {
 
-            Consumer<List<KafkaRecordImpl>> output = new BatchDistributionImpl(
+            BatchDistributionImpl output = new BatchDistributionImpl(
                     config, // Configuration settings
                     "topicName", // String, the name of the topic
                     durationStatistics, // RuntimeStatistics object from metrics
