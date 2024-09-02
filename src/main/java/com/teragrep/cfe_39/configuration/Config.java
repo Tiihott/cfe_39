@@ -82,6 +82,7 @@ public class Config {
     private final boolean skipEmptyRFC5424Records;
     private final String dfsDataTransferProtection;
     private final String dfsEncryptDataTransferCipherSuites;
+    private final long consumerTimeout;
 
     public Config() throws IOException {
         this("", 0);
@@ -183,6 +184,7 @@ public class Config {
         // kafka
         this.queueTopicPattern = properties.getProperty("queueTopicPattern", "^.*$");
         this.numOfConsumers = Integer.parseInt(properties.getProperty("numOfConsumers", "1"));
+        this.consumerTimeout = Long.parseLong(properties.getProperty("pruneOffset", "300000"));
 
         // skip non RFC5424 records
         this.skipNonRFC5424Records = properties.getProperty("skipNonRFC5424Records", "false").equalsIgnoreCase("true");
@@ -306,5 +308,9 @@ public class Config {
 
     public String getDfsEncryptDataTransferCipherSuites() {
         return dfsEncryptDataTransferCipherSuites;
+    }
+
+    public long consumerTimeout() {
+        return consumerTimeout;
     }
 }

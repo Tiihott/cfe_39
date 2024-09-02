@@ -45,6 +45,7 @@
  */
 package com.teragrep.cfe_39.consumers.kafka;
 
+import com.teragrep.cfe_39.configuration.Config;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
@@ -58,19 +59,19 @@ public class ReadCoordinator implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(ReadCoordinator.class);
 
     private final String queueTopic;
-    private final Properties readerKafkaProperties;
+    Config config;
     private final BatchDistributionImpl callbackFunction;
     private boolean run = true;
     private final Map<TopicPartition, Long> hdfsStartOffsets;
 
     public ReadCoordinator(
             String queueTopic,
-            Properties readerKafkaProperties,
+            Config config,
             BatchDistributionImpl callbackFunction,
             Map<TopicPartition, Long> hdfsStartOffsets
     ) {
         this.queueTopic = queueTopic;
-        this.readerKafkaProperties = readerKafkaProperties;
+        this.config = config;
         this.callbackFunction = callbackFunction;
         this.hdfsStartOffsets = hdfsStartOffsets;
     }
@@ -88,17 +89,29 @@ public class ReadCoordinator implements Runnable {
             String name = Thread.currentThread().getName(); // Use thread name to identify which thread is running the code.
             if (Objects.equals(name, "testConsumerTopic1")) {
                 kafkaConsumer = MockKafkaConsumerFactory.getConsumer(1); // creates a Kafka MockConsumer that has the odd numbered partitions assigned to it.
-                consumerRebalanceListenerImpl = new ConsumerRebalanceListenerImpl(kafkaConsumer, callbackFunction);
+                consumerRebalanceListenerImpl = new ConsumerRebalanceListenerImpl(
+                        kafkaConsumer,
+                        callbackFunction,
+                        config
+                );
                 kafkaConsumer.subscribe(Collections.singletonList(topic), consumerRebalanceListenerImpl);
             }
             else if (Objects.equals(name, "testConsumerTopic2")) {
                 kafkaConsumer = MockKafkaConsumerFactory.getConsumer(2); // creates a Kafka MockConsumer that has the even numbered partitions assigned to it.
-                consumerRebalanceListenerImpl = new ConsumerRebalanceListenerImpl(kafkaConsumer, callbackFunction);
+                consumerRebalanceListenerImpl = new ConsumerRebalanceListenerImpl(
+                        kafkaConsumer,
+                        callbackFunction,
+                        config
+                );
                 kafkaConsumer.subscribe(Collections.singletonList(topic), consumerRebalanceListenerImpl);
             }
             else {
                 kafkaConsumer = MockKafkaConsumerFactory.getConsumer(0); // Creates a single Kafka MockConsumer that has all the partitions assigned to it.
-                consumerRebalanceListenerImpl = new ConsumerRebalanceListenerImpl(kafkaConsumer, callbackFunction);
+                consumerRebalanceListenerImpl = new ConsumerRebalanceListenerImpl(
+                        kafkaConsumer,
+                        callbackFunction,
+                        config
+                );
                 kafkaConsumer.subscribe(Collections.singletonList(topic), consumerRebalanceListenerImpl);
             }
         }
@@ -108,7 +121,7 @@ public class ReadCoordinator implements Runnable {
                     new ByteArrayDeserializer(),
                     new ByteArrayDeserializer()
             );
-            consumerRebalanceListenerImpl = new ConsumerRebalanceListenerImpl(kafkaConsumer, callbackFunction);
+            consumerRebalanceListenerImpl = new ConsumerRebalanceListenerImpl(kafkaConsumer, callbackFunction, config);
             kafkaConsumer.subscribe(Collections.singletonList(topic), consumerRebalanceListenerImpl);
         }
 
@@ -123,17 +136,17 @@ public class ReadCoordinator implements Runnable {
             }
         }
 
-        return new KafkaReader(kafkaConsumer, callbackFunction, consumerRebalanceListenerImpl);
+        return new KafkaReader(kafkaConsumer, callbackFunction, consumerRebalanceListenerImpl, config);
     }
 
     // Part or Runnable implementation, called when the thread is started.
     @Override
     public void run() {
         boolean useMockKafkaConsumer = Boolean
-                .parseBoolean(readerKafkaProperties.getProperty("useMockKafkaConsumer", "false"));
+                .parseBoolean(config.getKafkaConsumerProperties().getProperty("useMockKafkaConsumer", "false"));
         try (
                 KafkaReader kafkaReader = createKafkaReader(
-                        readerKafkaProperties, queueTopic, callbackFunction, useMockKafkaConsumer
+                        config.getKafkaConsumerProperties(), queueTopic, callbackFunction, useMockKafkaConsumer
                 )
         ) {
             while (run) {

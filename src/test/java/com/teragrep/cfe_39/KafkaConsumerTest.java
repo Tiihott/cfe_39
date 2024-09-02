@@ -125,7 +125,7 @@ public class KafkaConsumerTest {
 
             ReadCoordinator readCoordinator = new ReadCoordinator(
                     "testConsumerTopic",
-                    config.getKafkaConsumerProperties(),
+                    config,
                     output1,
                     hdfsStartOffsets
             );
@@ -136,7 +136,7 @@ public class KafkaConsumerTest {
 
             ReadCoordinator readCoordinator2 = new ReadCoordinator(
                     "testConsumerTopic",
-                    config.getKafkaConsumerProperties(),
+                    config,
                     output2,
                     hdfsStartOffsets
             );
@@ -188,7 +188,7 @@ public class KafkaConsumerTest {
 
             ReadCoordinator readCoordinator = new ReadCoordinator(
                     "testConsumerTopic",
-                    config.getKafkaConsumerProperties(),
+                    config,
                     output,
                     hdfsStartOffsets
             );

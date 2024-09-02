@@ -134,7 +134,6 @@ public class BatchDistributionImpl implements BatchDistribution {
             }
             catch (IOException e) {
                 LOGGER.error("Failed to write the SyslogRecords to PartitionFileImpl <{}> in topic <{}>", key, topic);
-                // FIXME: Fail fast and restart the whole cfe_39 so the kafka consumer group offsets can be fetched again from the files stored in HDFS.
                 throw new RuntimeException(e);
             }
         });

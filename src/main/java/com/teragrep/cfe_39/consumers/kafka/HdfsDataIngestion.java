@@ -216,12 +216,7 @@ public class HdfsDataIngestion {
                     durationStatistics, // RuntimeStatistics object from metrics
                     topicCounter // TopicCounter object from metrics
             );
-            ReadCoordinator readCoordinator = new ReadCoordinator(
-                    topic,
-                    config.getKafkaConsumerProperties(),
-                    output,
-                    hdfsStartOffsets
-            );
+            ReadCoordinator readCoordinator = new ReadCoordinator(topic, config, output, hdfsStartOffsets);
             Thread readThread = new Thread(null, readCoordinator, topic + threadId); // Starts the thread with readCoordinator that creates the consumer and subscribes to the topic.
             threads.add(readThread);
             readThread.start(); // Starts the thread, in other words proceeds to call run() function of ReadCoordinator.

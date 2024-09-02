@@ -45,13 +45,19 @@
  */
 package com.teragrep.cfe_39.consumers.kafka;
 
+import com.teragrep.cfe_39.configuration.Config;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocalFileSystem;
+import org.apache.hadoop.hdfs.DistributedFileSystem;
+import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
-import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.net.URI;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -59,44 +65,101 @@ import java.util.Map;
 public class ConsumerRebalanceListenerImpl implements ConsumerRebalanceListener {
 
     private final Logger LOGGER = LoggerFactory.getLogger(ConsumerRebalanceListenerImpl.class);
+
     private final Consumer<byte[], byte[]> kafkaConsumer;
     private final BatchDistributionImpl callbackFunction;
-    private final Map<TopicPartition, OffsetAndMetadata> currentOffsets;
+    private final Config config;
 
     public ConsumerRebalanceListenerImpl(
             Consumer<byte[], byte[]> kafkaConsumer,
-            BatchDistributionImpl callbackFunction
+            BatchDistributionImpl callbackFunction,
+            Config config
     ) {
         this.kafkaConsumer = kafkaConsumer;
         this.callbackFunction = callbackFunction;
-        this.currentOffsets = new HashMap<>();
-    }
-
-    public void addOffsetToTrack(String topic, int partition, long offset) {
-        currentOffsets.put(new TopicPartition(topic, partition), new OffsetAndMetadata(offset + 1, null));
-        // 1. Pass listener to callbackFunction.
-        // 2. Call the addOffsetToTrack() every time a file is stored to HDFS.
-        // 3. Finally remove the try/catch from BatchDistributionImpl and instead let the KafkaReader to try/catch the exception.
-        // 4. In KafkaReader commit the offsets using the listener's getCurrentOffsets() method, and then re-throw the exception.
-    }
-
-    // this is used when we shut down our consumer gracefully
-    public Map<TopicPartition, OffsetAndMetadata> getCurrentOffsets() {
-        return currentOffsets;
+        this.config = config;
     }
 
     @Override
-    public void onPartitionsRevoked(Collection<TopicPartition> collection) {
+    public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
         // Flush any records from the temporary files to HDFS to synchronize database with committed kafka offsets, and clean up PartitionFile list.
         LOGGER.info("onPartitionsRevoked triggered");
         callbackFunction.rebalance();
-        LOGGER.info("Committing offsets <{}>", currentOffsets);
-        kafkaConsumer.commitSync(currentOffsets);
     }
 
     @Override
-    public void onPartitionsAssigned(Collection<TopicPartition> collection) {
+    public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
         LOGGER.info("onPartitionsAssigned triggered");
-        // NoOp: records and offsets are already stored to HDFS by the callbackFunction.rebalance(), and kafka coordinator should handle committed offsets automatically.
+        // Generates offsets of the already committed records for Kafka and passes them to the kafka consumers.
+        FileSystem fs;
+        if (!"kerberos".equals(config.getHadoopAuthentication())) {
+            // Initializing the FileSystem with minicluster.
+            String hdfsuri = config.getHdfsuri();
+            // ====== Init HDFS File System Object
+            HdfsConfiguration conf = new HdfsConfiguration();
+            // Set FileSystem URI
+            conf.set("fs.defaultFS", hdfsuri);
+            // Because of Maven
+            conf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
+            conf.set("fs.file.impl", org.apache.hadoop.fs.LocalFileSystem.class.getName());
+            // Set HADOOP user
+            System.setProperty("HADOOP_USER_NAME", "hdfs");
+            System.setProperty("hadoop.home.dir", "/");
+            //Get the filesystem - HDFS
+            try {
+                fs = FileSystem.get(URI.create(hdfsuri), conf);
+            }
+            catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        else {
+            // Initializing the FileSystem with kerberos.
+            String hdfsuri = config.getHdfsuri(); // Get from config.
+            // set kerberos host and realm
+            System.setProperty("java.security.krb5.realm", config.getKerberosRealm());
+            System.setProperty("java.security.krb5.kdc", config.getKerberosHost());
+            HdfsConfiguration conf = new HdfsConfiguration();
+            // enable kerberus
+            conf.set("hadoop.security.authentication", config.getHadoopAuthentication());
+            conf.set("hadoop.security.authorization", config.getHadoopAuthorization());
+            conf.set("hadoop.kerberos.keytab.login.autorenewal.enabled", config.getKerberosLoginAutorenewal());
+            conf.set("fs.defaultFS", hdfsuri); // Set FileSystem URI
+            conf.set("fs.hdfs.impl", DistributedFileSystem.class.getName()); // Maven stuff?
+            conf.set("fs.file.impl", LocalFileSystem.class.getName()); // Maven stuff?
+            /* hack for running locally with fake DNS records
+             set this to true if overriding the host name in /etc/hosts*/
+            conf.set("dfs.client.use.datanode.hostname", config.getKerberosTestMode());
+            /* server principal
+             the kerberos principle that the namenode is using*/
+            conf.set("dfs.namenode.kerberos.principal.pattern", config.getKerberosPrincipal());
+            // set sasl
+            conf.set("dfs.data.transfer.protection", config.getDfsDataTransferProtection());
+            conf.set("dfs.encrypt.data.transfer.cipher.suites", config.getDfsEncryptDataTransferCipherSuites());
+            // filesystem for HDFS access is set here
+            try {
+                fs = FileSystem.get(conf);
+            }
+            catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        Map<TopicPartition, Long> hdfsStartOffsets = new HashMap<>();
+        try (HDFSRead hr = new HDFSRead(config, fs)) {
+            hdfsStartOffsets = hr.hdfsStartOffsets();
+            LOGGER.debug("topicPartitionStartMap generated succesfully: <{}>", hdfsStartOffsets);
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        for (TopicPartition topicPartition : partitions) {
+            if (hdfsStartOffsets.containsKey(topicPartition)) {
+                long position = kafkaConsumer.position(topicPartition);
+                if (position < hdfsStartOffsets.get(topicPartition)) {
+                    kafkaConsumer.seek(topicPartition, hdfsStartOffsets.get(topicPartition));
+                }
+            }
+        }
     }
 }

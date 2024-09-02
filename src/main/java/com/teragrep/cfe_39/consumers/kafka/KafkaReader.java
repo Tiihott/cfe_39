@@ -45,29 +45,37 @@
  */
 package com.teragrep.cfe_39.consumers.kafka;
 
+import com.teragrep.cfe_39.configuration.Config;
 import org.apache.kafka.clients.consumer.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 
 public class KafkaReader implements AutoCloseable {
 
     private final Logger LOGGER = LoggerFactory.getLogger(KafkaReader.class);
+
+    private final Config config;
     private final Consumer<byte[], byte[]> kafkaConsumer;
     private final BatchDistributionImpl callbackFunction;
     private final ConsumerRebalanceListenerImpl consumerRebalanceListenerImpl;
+    private long lastTimeCalled;
 
     public KafkaReader(
             Consumer<byte[], byte[]> kafkaConsumer,
             BatchDistributionImpl callbackFunction,
-            ConsumerRebalanceListenerImpl consumerRebalanceListenerImpl
+            ConsumerRebalanceListenerImpl consumerRebalanceListenerImpl,
+            Config config
     ) {
         this.kafkaConsumer = kafkaConsumer;
         this.callbackFunction = callbackFunction;
         this.consumerRebalanceListenerImpl = consumerRebalanceListenerImpl;
+        this.config = config;
+        this.lastTimeCalled = Instant.now().toEpochMilli();
     }
 
     public void read() {
@@ -95,17 +103,17 @@ public class KafkaReader implements AutoCloseable {
             /* This is the BatchDistributionImpl.accept() function.
              KafkaRecord and other required data for HDFS storage are added to the input parameters of the accept() function which processes the consumed record.*/
             callbackFunction.accept(recordOffsetObjectList);
-            kafkaConsumer.commitSync();
-            // lastTimeCalled = Instant.now().toEpochMilli();
+            kafkaConsumer.commitAsync();
+            lastTimeCalled = Instant.now().toEpochMilli();
         }
         else {
-            // FIXME: If no new kafka record batches is received for a while, use callbackFunction.accept() with empty recordOffsetObjectList to flush records that have already been committed in kafka to HDFS.
-            /*long thisTime = Instant.now().toEpochMilli();
+            // If no new kafka record batches is received for a while, use callbackFunction.accept() with empty recordOffsetObjectList to flush records that have already been committed in kafka to HDFS.
+            long thisTime = Instant.now().toEpochMilli();
             long ftook = thisTime - lastTimeCalled;
-            if (ftook > config.consumerTimeout) {
+            if (ftook > config.consumerTimeout()) {
                 callbackFunction.accept(recordOffsetObjectList);
                 lastTimeCalled = Instant.now().toEpochMilli();
-            }*/
+            }
         }
     }
 
