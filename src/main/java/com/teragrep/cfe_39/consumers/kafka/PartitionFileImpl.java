@@ -142,7 +142,7 @@ public class PartitionFileImpl implements PartitionFile {
     }
 
     @Override
-    public void rebalance() {
+    public void delete() {
         if (LOGGER.isDebugEnabled()) {
             LOGGER
                     .debug(

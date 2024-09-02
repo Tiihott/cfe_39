@@ -169,7 +169,7 @@ public class BatchDistributionImpl implements BatchDistribution {
         accept(new ArrayList<>()); // Will write all files with records still in them to HDFS.
         // Delete all PartitionFile objects from the partitionFileMap. Must also delete the files linked to the objects.
         partitionFileMap.forEach((key, value) -> {
-            value.rebalance();
+            value.delete();
         });
         partitionFileMap.clear();
     }
