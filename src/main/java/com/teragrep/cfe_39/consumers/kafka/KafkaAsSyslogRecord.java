@@ -56,7 +56,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 
-public class KafkaRecordConverter {
+public class KafkaAsSyslogRecord {
 
     private final SDVector eventNodeSourceSource;
     private final SDVector eventNodeRelaySource;
@@ -75,7 +75,7 @@ public class KafkaRecordConverter {
 
     private final ByteBuffer sourceConcatenationBuffer;
 
-    public KafkaRecordConverter() {
+    public KafkaAsSyslogRecord() {
         this.eventNodeSourceSource = new SDVector("event_node_source@48577", "source");
         this.eventNodeRelaySource = new SDVector("event_node_relay@48577", "source");
         this.eventNodeSourceSourceModule = new SDVector("event_node_source@48577", "source_module");

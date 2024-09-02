@@ -46,7 +46,6 @@
 package com.teragrep.cfe_39.consumers.kafka;
 
 import com.teragrep.cfe_39.avro.SyslogRecord;
-import com.teragrep.rlo_06.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -85,7 +84,7 @@ public final class KafkaRecordImpl implements KafkaRecord {
     @Override
     public SyslogRecord toSyslogRecord() {
         InputStream inputStream = new ByteArrayInputStream(record);
-        return new KafkaRecordConverter().convert(inputStream, String.valueOf(partition), offset);
+        return new KafkaAsSyslogRecord().convert(inputStream, String.valueOf(partition), offset);
     }
 
 }
