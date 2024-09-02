@@ -84,7 +84,7 @@ public final class KafkaRecordImpl implements KafkaRecord {
     @Override
     public SyslogRecord toSyslogRecord() {
         InputStream inputStream = new ByteArrayInputStream(record);
-        return new KafkaAsSyslogRecord().convert(inputStream, String.valueOf(partition), offset);
+        return new KafkaAsSyslogRecord().toSyslogRecord(inputStream, String.valueOf(partition), offset);
     }
 
 }

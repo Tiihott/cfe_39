@@ -104,7 +104,7 @@ public class KafkaAsSyslogRecord {
         return Math.addExact(sec, instant.getNano() / NANOS_PER_MICROS);
     }
 
-    public SyslogRecord convert(InputStream inputStream, String partition, long offset) {
+    public SyslogRecord toSyslogRecord(InputStream inputStream, String partition, long offset) {
         rfc5424Frame.load(inputStream);
         try {
             rfc5424Frame.next();
