@@ -43,7 +43,25 @@
  * Teragrep, the applicable Commercial License may apply to this file if you as
  * a licensee so wish it.
  */
-package com.teragrep.cfe_39.configuration;
+package com.teragrep.cfe_39;
 
-public interface HdfsConfiguration {
+import com.teragrep.cfe_39.configuration.ConfigurationImpl;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+
+public class ConfigurationTest {
+
+    @Test
+    public void configurationTest() throws IOException {
+        System
+                .setProperty("cfe_39.config.location", System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
+        ConfigurationImpl configuration = new ConfigurationImpl().loadPropertiesFile();
+        String s = configuration.valueOf("hdfsuri");
+        Assertions.assertEquals("hdfs://localhost:45937/", s);
+        configuration = configuration.with("hdfsuri", "123456");
+        s = configuration.valueOf("hdfsuri");
+        Assertions.assertEquals("123456", s);
+    }
 }

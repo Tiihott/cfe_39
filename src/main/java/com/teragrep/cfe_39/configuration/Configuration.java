@@ -45,12 +45,16 @@
  */
 package com.teragrep.cfe_39.configuration;
 
+import java.io.IOException;
+
 public interface Configuration {
+
+    ConfigurationImpl loadPropertiesFile() throws IOException;
+
+    Configuration with(String key, String value);
 
     String valueOf(String key);
 
     boolean has(String key);
-
-    boolean equals(Object o);
 
 }

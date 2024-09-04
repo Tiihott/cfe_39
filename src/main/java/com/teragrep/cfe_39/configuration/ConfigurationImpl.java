@@ -55,37 +55,51 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
-public class ConfigurationImpl implements Configuration {
+public final class ConfigurationImpl implements Configuration {
 
-    private final Logger LOGGER = LoggerFactory.getLogger(Config.class);
+    private final Logger LOGGER = LoggerFactory.getLogger(ConfigurationImpl.class);
     private final Properties properties;
-    private final KafkaConfigurationImpl kafkaConfigurationImpl;
-    private final HdfsConfigurationImpl hdfsConfigurationImpl;
-    private final KerberosConfigurationImpl kerberosConfigurationImpl;
 
-    public ConfigurationImpl() throws IOException {
-        properties = new Properties();
+    public ConfigurationImpl() {
+        this(new Properties());
+    }
+
+    public ConfigurationImpl(Properties properties) {
+        this.properties = properties;
+    }
+
+    @Override
+    public ConfigurationImpl loadPropertiesFile() throws IOException {
+        // Maybe implement the configuration validation here instead of a public method?
+        final Properties newProperties = new Properties();
         Path configPath = Paths
                 .get(System.getProperty("cfe_39.config.location", "/opt/teragrep/cfe_39/etc/application.properties"));
         LOGGER.info("Loading application config <[{}]>", configPath.toAbsolutePath());
-
         try (InputStream inputStream = Files.newInputStream(configPath)) {
-            properties.load(inputStream);
-            LOGGER.debug("Got configuration: <{}>", properties);
+            newProperties.load(inputStream);
+            LOGGER.debug("Got configuration: <{}>", newProperties);
         }
+        return new ConfigurationImpl(newProperties);
+    }
 
-        this.kafkaConfigurationImpl = new KafkaConfigurationImpl(properties);
-        this.hdfsConfigurationImpl = new HdfsConfigurationImpl(properties);
-        this.kerberosConfigurationImpl = new KerberosConfigurationImpl(properties);
+    @Override
+    public ConfigurationImpl with(String key, String value) {
+        // Maybe implement the configuration validation here instead of a public method?
+        final Properties newProperties = new Properties(properties);
+        newProperties.setProperty(key, value);
+        return new ConfigurationImpl(newProperties);
     }
 
     @Override
     public String valueOf(String key) {
-        return "";
+        if (has(key)) {
+            return properties.getProperty(key);
+        }
+        throw new IllegalArgumentException("Key not found: " + key);
     }
 
     @Override
     public boolean has(String key) {
-        return false;
+        return properties.containsKey(key);
     }
 }
