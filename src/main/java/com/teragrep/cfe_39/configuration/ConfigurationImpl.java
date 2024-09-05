@@ -59,6 +59,7 @@ public final class ConfigurationImpl implements Configuration {
 
     private final Logger LOGGER = LoggerFactory.getLogger(ConfigurationImpl.class);
     private final Properties properties;
+    private final ConfigurationValidationImpl configurationValidationImpl;
 
     public ConfigurationImpl() {
         this(new Properties());
@@ -66,11 +67,11 @@ public final class ConfigurationImpl implements Configuration {
 
     public ConfigurationImpl(Properties properties) {
         this.properties = properties;
+        configurationValidationImpl = new ConfigurationValidationImpl();
     }
 
     @Override
     public ConfigurationImpl loadPropertiesFile() throws IOException {
-        // Maybe implement the configuration validation here instead of a public method?
         final Properties newProperties = new Properties();
         Path configPath = Paths
                 .get(System.getProperty("cfe_39.config.location", "/opt/teragrep/cfe_39/etc/application.properties"));
@@ -79,27 +80,42 @@ public final class ConfigurationImpl implements Configuration {
             newProperties.load(inputStream);
             LOGGER.debug("Got configuration: <{}>", newProperties);
         }
+        configurationValidationImpl.validate(newProperties);
         return new ConfigurationImpl(newProperties);
     }
 
     @Override
     public ConfigurationImpl with(String key, String value) {
-        // Maybe implement the configuration validation here instead of a public method?
-        final Properties newProperties = new Properties(properties);
+        final Properties newProperties = new Properties();
+        newProperties.putAll(properties);
         newProperties.setProperty(key, value);
+        configurationValidationImpl.validate(newProperties);
         return new ConfigurationImpl(newProperties);
     }
 
     @Override
     public String valueOf(String key) {
-        if (has(key)) {
+        if (properties.containsKey(key)) {
             return properties.getProperty(key);
         }
         throw new IllegalArgumentException("Key not found: " + key);
     }
 
     @Override
-    public boolean has(String key) {
-        return properties.containsKey(key);
+    public Properties toKafkaConsumerProperties() {
+        Properties kafkaProperties = new Properties();
+        kafkaProperties.put("bootstrap.servers", valueOf("bootstrap.servers"));
+        kafkaProperties.put("auto.offset.reset", valueOf("auto.offset.reset"));
+        kafkaProperties.put("enable.auto.commit", valueOf("enable.auto.commit"));
+        kafkaProperties.put("group.id", valueOf("group.id"));
+        kafkaProperties.put("security.protocol", valueOf("security.protocol"));
+        kafkaProperties.put("sasl.mechanism", valueOf("sasl.mechanism"));
+        kafkaProperties.put("max.poll.records", valueOf("max.poll.records"));
+        kafkaProperties.put("fetch.max.bytes", valueOf("fetch.max.bytes"));
+        kafkaProperties.put("request.timeout.ms", valueOf("request.timeout.ms"));
+        kafkaProperties.put("max.poll.interval.ms", valueOf("max.poll.interval.ms"));
+        kafkaProperties.put("useMockKafkaConsumer", valueOf("useMockKafkaConsumer"));
+        return kafkaProperties;
     }
+
 }
