@@ -45,6 +45,7 @@
  */
 package com.teragrep.cfe_39.configuration;
 
+import org.apache.logging.log4j.core.config.Configurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,6 +117,15 @@ public final class ConfigurationImpl implements Configuration {
         kafkaProperties.put("max.poll.interval.ms", valueOf("max.poll.interval.ms"));
         kafkaProperties.put("useMockKafkaConsumer", valueOf("useMockKafkaConsumer"));
         return kafkaProperties;
+    }
+
+    @Override
+    public void configureLogging() throws IOException {
+        // Just for loggers to work
+        Path log4j2Config = Paths
+                .get(properties.getProperty("log4j2.configurationFile", System.getProperty("user.dir") + "/rpm/resources/log4j2.properties"));
+        LOGGER.info("Loading log4j2 config from <[{}]>", log4j2Config.toRealPath());
+        Configurator.reconfigure(log4j2Config.toUri());
     }
 
 }

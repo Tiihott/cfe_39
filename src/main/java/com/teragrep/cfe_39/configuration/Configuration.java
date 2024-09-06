@@ -58,4 +58,6 @@ public interface Configuration {
 
     Properties toKafkaConsumerProperties();
 
+    void configureLogging() throws IOException;
+
 }
