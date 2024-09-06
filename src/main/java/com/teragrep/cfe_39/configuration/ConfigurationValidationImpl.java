@@ -127,6 +127,7 @@ public final class ConfigurationValidationImpl implements ConfigurationValidatio
         requiredKeys.add("skipEmptyRFC5424Records");
         requiredKeys.add("log4j2.configurationFile");
         // kafka
+        requiredKeys.add("java.security.auth.login.config");
         requiredKeys.add("bootstrap.servers");
         requiredKeys.add("auto.offset.reset");
         requiredKeys.add("enable.auto.commit");
