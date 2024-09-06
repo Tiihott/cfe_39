@@ -45,7 +45,7 @@
  */
 package com.teragrep.cfe_39.consumers.kafka;
 
-import com.teragrep.cfe_39.configuration.Config;
+import com.teragrep.cfe_39.configuration.ConfigurationImpl;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -61,9 +61,9 @@ public class HDFSPrune {
     private final Path newDirectoryPath;
     private final long cutOffEpoch;
 
-    public HDFSPrune(Config config, String topicName, FileSystem fs) throws IOException {
+    public HDFSPrune(ConfigurationImpl config, String topicName, FileSystem fs) throws IOException {
         this.fs = fs;
-        String path = config.getHdfsPath().concat("/").concat(topicName);
+        String path = config.valueOf("hdfsPath").concat("/").concat(topicName);
         //==== Create directory if not exists
         Path workingDir = fs.getWorkingDirectory();
         newDirectoryPath = new Path(path);
@@ -72,7 +72,7 @@ public class HDFSPrune {
             fs.mkdirs(newDirectoryPath);
             LOGGER.info("Path <{}> created.", path);
         }
-        long pruneOffset = config.getPruneOffset();
+        long pruneOffset = Long.parseLong(config.valueOf("pruneOffset"));
         cutOffEpoch = System.currentTimeMillis() - pruneOffset; // pruneOffset is parametrized in Config.java. Default value is 2 days in milliseconds.
     }
 

@@ -45,7 +45,7 @@
  */
 package com.teragrep.cfe_39;
 
-import com.teragrep.cfe_39.configuration.Config;
+import com.teragrep.cfe_39.configuration.ConfigurationImpl;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
@@ -56,7 +56,7 @@ import java.io.IOException;
 // Helper class for creating FileSystem objects.
 public class TestMiniClusterFactory {
 
-    public MiniDFSCluster create(Config config, File baseDir) throws IOException {
+    public MiniDFSCluster create(ConfigurationImpl config, File baseDir) throws IOException {
         MiniDFSCluster hdfsCluster;
         // Create a HDFS miniCluster
         Configuration conf = new Configuration();

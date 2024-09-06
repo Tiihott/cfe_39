@@ -45,8 +45,8 @@
  */
 package com.teragrep.cfe_39.consumers.kafka;
 
-import com.teragrep.cfe_39.configuration.Config;
 import com.teragrep.cfe_39.avro.SyslogRecord;
+import com.teragrep.cfe_39.configuration.ConfigurationImpl;
 import com.teragrep.rlo_06.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,9 +59,9 @@ public class PartitionRecordsImpl implements PartitionRecords {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartitionRecordsImpl.class);
 
     private final List<KafkaRecordImpl> kafkaRecordList;
-    private final Config config;
+    private final ConfigurationImpl config;
 
-    public PartitionRecordsImpl(Config config) {
+    public PartitionRecordsImpl(ConfigurationImpl config) {
         this.kafkaRecordList = new ArrayList<>();
         this.config = config;
     }
@@ -79,7 +79,7 @@ public class PartitionRecordsImpl implements PartitionRecords {
                 syslogRecordList.add(next.toSyslogRecord());
             }
             catch (ParseException e) {
-                if (config.getSkipNonRFC5424Records()) {
+                if (config.valueOf("skipNonRFC5424Records").equalsIgnoreCase("true")) {
                     LOGGER
                             .warn(
                                     "Skipping parsing a non RFC5424 record, record metadata: <{}>. Exception information: ",
@@ -92,7 +92,7 @@ public class PartitionRecordsImpl implements PartitionRecords {
                 }
             }
             catch (NullPointerException e) {
-                if (config.getSkipEmptyRFC5424Records()) {
+                if (config.valueOf("skipEmptyRFC5424Records").equalsIgnoreCase("true")) {
                     LOGGER
                             .warn(
                                     "Skipping parsing an empty RFC5424 record, record metadata: <{}>. Exception information: ",

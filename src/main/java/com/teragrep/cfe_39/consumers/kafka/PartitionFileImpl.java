@@ -46,8 +46,8 @@
 package com.teragrep.cfe_39.consumers.kafka;
 
 import com.google.gson.JsonObject;
-import com.teragrep.cfe_39.configuration.Config;
 import com.teragrep.cfe_39.avro.SyslogRecord;
+import com.teragrep.cfe_39.configuration.ConfigurationImpl;
 import com.teragrep.cfe_39.consumers.kafka.queue.WritableQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,14 +62,14 @@ public class PartitionFileImpl implements PartitionFile {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartitionFileImpl.class);
 
     private final JsonObject topicPartition;
-    private final Config config;
+    private final ConfigurationImpl config;
     private final File syslogFile;
     private final List<Long> batchOffsets;
     private final PartitionRecordsImpl partitionRecords;
 
-    PartitionFileImpl(Config config, JsonObject topicPartition) throws IOException {
+    PartitionFileImpl(ConfigurationImpl config, JsonObject topicPartition) throws IOException {
         WritableQueue writableQueue = new WritableQueue(
-                config.getQueueDirectory(),
+                config.valueOf("queueDirectory"),
                 topicPartition.get("topic").getAsString() + topicPartition.get("partition").getAsString()
         );
         this.syslogFile = writableQueue.getNextWritableFile();
@@ -106,7 +106,7 @@ public class PartitionFileImpl implements PartitionFile {
                 storedOffset = next.getOffset();
             }
             // When the file size has gone above the maximum, commit the file into HDFS using the latest topic/partition/offset values as the filename and then delete the local avro-file.
-            if (config.getMaximumFileSize() < syslogFile.length()) {
+            if (Long.parseLong(config.valueOf("maximumFileSize")) < syslogFile.length()) {
                 writeToHdfs(storedOffset);
             }
         }

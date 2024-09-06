@@ -45,7 +45,7 @@
  */
 package com.teragrep.cfe_39.consumers.kafka;
 
-import com.teragrep.cfe_39.configuration.Config;
+import com.teragrep.cfe_39.configuration.ConfigurationImpl;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
@@ -59,14 +59,14 @@ public class ReadCoordinator implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(ReadCoordinator.class);
 
     private final String queueTopic;
-    Config config;
+    ConfigurationImpl config;
     private final BatchDistributionImpl callbackFunction;
     private boolean run = true;
     private final Map<TopicPartition, Long> hdfsStartOffsets;
 
     public ReadCoordinator(
             String queueTopic,
-            Config config,
+            ConfigurationImpl config,
             BatchDistributionImpl callbackFunction,
             Map<TopicPartition, Long> hdfsStartOffsets
     ) {
@@ -143,10 +143,10 @@ public class ReadCoordinator implements Runnable {
     @Override
     public void run() {
         boolean useMockKafkaConsumer = Boolean
-                .parseBoolean(config.getKafkaConsumerProperties().getProperty("useMockKafkaConsumer", "false"));
+                .parseBoolean(config.toKafkaConsumerProperties().getProperty("useMockKafkaConsumer", "false"));
         try (
                 KafkaReader kafkaReader = createKafkaReader(
-                        config.getKafkaConsumerProperties(), queueTopic, callbackFunction, useMockKafkaConsumer
+                        config.toKafkaConsumerProperties(), queueTopic, callbackFunction, useMockKafkaConsumer
                 )
         ) {
             while (run) {

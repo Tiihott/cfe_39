@@ -45,7 +45,7 @@
  */
 package com.teragrep.cfe_39;
 
-import com.teragrep.cfe_39.configuration.Config;
+import com.teragrep.cfe_39.configuration.ConfigurationImpl;
 import com.teragrep.cfe_39.consumers.kafka.HdfsDataIngestion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,9 +57,10 @@ public class Main {
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args) throws Exception {
-        Config config = null;
+        ConfigurationImpl config = new ConfigurationImpl();
         try {
-            config = new Config();
+            config = config.loadPropertiesFile();
+            config.configureLogging();
         }
         catch (IOException e) {
             LOGGER.error("Can't load config: ", e);

@@ -47,6 +47,7 @@ package com.teragrep.cfe_39;
 
 import com.teragrep.cfe_39.configuration.Config;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,6 +60,7 @@ public class ConfigTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigTest.class);
 
+    @Disabled
     @Test
     public void validConfigTest() {
         assertDoesNotThrow(() -> {
@@ -75,6 +77,7 @@ public class ConfigTest {
         });
     }
 
+    @Disabled
     @Test
     public void brokenConfigTest() {
         // Set system properties to use the broken configuration.
@@ -87,6 +90,7 @@ public class ConfigTest {
         Assertions.assertEquals("hdfsuri not set", e.getMessage());
     }
 
+    @Disabled
     @Test
     public void configEqualityTest() {
         assertDoesNotThrow(() -> {
@@ -103,6 +107,7 @@ public class ConfigTest {
         });
     }
 
+    @Disabled
     @Test
     public void configConstructorTest() {
         assertDoesNotThrow(() -> {

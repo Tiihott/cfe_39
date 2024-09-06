@@ -46,7 +46,7 @@
 package com.teragrep.cfe_39;
 
 import com.teragrep.cfe_39.avro.SyslogRecord;
-import com.teragrep.cfe_39.configuration.Config;
+import com.teragrep.cfe_39.configuration.ConfigurationImpl;
 import com.teragrep.cfe_39.consumers.kafka.BatchDistributionImpl;
 import com.teragrep.cfe_39.consumers.kafka.ReadCoordinator;
 import com.teragrep.cfe_39.metrics.DurationStatistics;
@@ -74,7 +74,7 @@ public class KafkaConsumerTest {
 
     private static MiniDFSCluster hdfsCluster;
     private static File baseDir;
-    private static Config config;
+    private static ConfigurationImpl config;
     private FileSystem fs;
 
     // Prepares known state for testing.
@@ -84,12 +84,17 @@ public class KafkaConsumerTest {
             // Set system properties to use the valid configuration with skipping of broken records disabled.
             System
                     .setProperty("cfe_39.config.location", System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
-            config = new Config();
+            config = new ConfigurationImpl().loadPropertiesFile();
             // Create a HDFS miniCluster
             baseDir = Files.createTempDirectory("test_hdfs").toFile().getAbsoluteFile();
             hdfsCluster = new TestMiniClusterFactory().create(config, baseDir);
-            config = new Config("hdfs://localhost:" + hdfsCluster.getNameNodePort() + "/", 30000);
-            fs = new TestFileSystemFactory().create(config.getHdfsuri());
+            config = config.with("hdfsuri", "hdfs://localhost:" + hdfsCluster.getNameNodePort() + "/");
+            config = config.with("maximumFileSize", "30000");
+            config = config.with("queueDirectory", System.getProperty("user.dir") + "/etc/AVRO/");
+            config = config
+                    .with("log4j2.configurationFile", System.getProperty("user.dir") + "/rpm/resources/log4j2.properties");
+            config.configureLogging();
+            fs = new TestFileSystemFactory().create(config.valueOf("hdfsuri"));
         });
     }
 
@@ -153,7 +158,7 @@ public class KafkaConsumerTest {
                 filenameList.add("testConsumerTopic" + i + "." + 1);
             }
             for (String fileName : filenameList) {
-                String path2 = config.getQueueDirectory() + "/" + fileName;
+                String path2 = config.valueOf("queueDirectory") + "/" + fileName;
                 File avroFile = new File(path2);
                 Assertions.assertTrue(filenameList.contains(avroFile.getName()));
                 DatumReader<SyslogRecord> datumReader = new SpecificDatumReader<>(SyslogRecord.class);
@@ -205,7 +210,7 @@ public class KafkaConsumerTest {
                 filenameList.add("testConsumerTopic" + i + "." + 1);
             }
             for (String fileName : filenameList) {
-                String path2 = config.getQueueDirectory() + "/" + fileName;
+                String path2 = config.valueOf("queueDirectory") + "/" + fileName;
                 File avroFile = new File(path2);
                 Assertions.assertTrue(filenameList.contains(avroFile.getName()));
                 DatumReader<SyslogRecord> datumReader = new SpecificDatumReader<>(SyslogRecord.class);

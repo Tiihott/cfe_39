@@ -45,7 +45,7 @@
  */
 package com.teragrep.cfe_39.consumers.kafka;
 
-import com.teragrep.cfe_39.configuration.Config;
+import com.teragrep.cfe_39.configuration.ConfigurationImpl;
 import org.apache.kafka.clients.consumer.*;
 
 import org.slf4j.Logger;
@@ -59,7 +59,7 @@ public class KafkaReader implements AutoCloseable {
 
     private final Logger LOGGER = LoggerFactory.getLogger(KafkaReader.class);
 
-    private final Config config;
+    private final ConfigurationImpl config;
     private final Consumer<byte[], byte[]> kafkaConsumer;
     private final BatchDistributionImpl callbackFunction;
     private final ConsumerRebalanceListenerImpl consumerRebalanceListenerImpl;
@@ -69,7 +69,7 @@ public class KafkaReader implements AutoCloseable {
             Consumer<byte[], byte[]> kafkaConsumer,
             BatchDistributionImpl callbackFunction,
             ConsumerRebalanceListenerImpl consumerRebalanceListenerImpl,
-            Config config
+            ConfigurationImpl config
     ) {
         this.kafkaConsumer = kafkaConsumer;
         this.callbackFunction = callbackFunction;
@@ -110,7 +110,7 @@ public class KafkaReader implements AutoCloseable {
             // If no new kafka record batches is received for a while, use callbackFunction.accept() with empty recordOffsetObjectList to flush records that have already been committed in kafka to HDFS.
             long thisTime = Instant.now().toEpochMilli();
             long ftook = thisTime - lastTimeCalled;
-            if (ftook > config.consumerTimeout()) {
+            if (ftook > Long.parseLong(config.valueOf("consumerTimeout"))) {
                 callbackFunction.accept(recordOffsetObjectList);
                 lastTimeCalled = Instant.now().toEpochMilli();
             }

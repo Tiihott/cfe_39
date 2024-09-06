@@ -45,7 +45,7 @@
  */
 package com.teragrep.cfe_39.consumers.kafka;
 
-import com.teragrep.cfe_39.configuration.Config;
+import com.teragrep.cfe_39.configuration.ConfigurationImpl;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
@@ -68,12 +68,12 @@ public class ConsumerRebalanceListenerImpl implements ConsumerRebalanceListener 
 
     private final Consumer<byte[], byte[]> kafkaConsumer;
     private final BatchDistributionImpl callbackFunction;
-    private final Config config;
+    private final ConfigurationImpl config;
 
     public ConsumerRebalanceListenerImpl(
             Consumer<byte[], byte[]> kafkaConsumer,
             BatchDistributionImpl callbackFunction,
-            Config config
+            ConfigurationImpl config
     ) {
         this.kafkaConsumer = kafkaConsumer;
         this.callbackFunction = callbackFunction;
@@ -92,9 +92,9 @@ public class ConsumerRebalanceListenerImpl implements ConsumerRebalanceListener 
         LOGGER.info("onPartitionsAssigned triggered");
         // Generates offsets of the already committed records for Kafka and passes them to the kafka consumers.
         FileSystem fs;
-        if (!"kerberos".equals(config.getHadoopAuthentication())) {
+        if (!"kerberos".equals(config.valueOf("hadoop.security.authentication"))) {
             // Initializing the FileSystem with minicluster.
-            String hdfsuri = config.getHdfsuri();
+            String hdfsuri = config.valueOf("hdfsuri");
             // ====== Init HDFS File System Object
             HdfsConfiguration conf = new HdfsConfiguration();
             // Set FileSystem URI
@@ -115,27 +115,35 @@ public class ConsumerRebalanceListenerImpl implements ConsumerRebalanceListener 
         }
         else {
             // Initializing the FileSystem with kerberos.
-            String hdfsuri = config.getHdfsuri(); // Get from config.
+            String hdfsuri = config.valueOf("hdfsuri"); // Get from config.
             // set kerberos host and realm
-            System.setProperty("java.security.krb5.realm", config.getKerberosRealm());
-            System.setProperty("java.security.krb5.kdc", config.getKerberosHost());
+            System.setProperty("java.security.krb5.realm", config.valueOf("java.security.krb5.realm"));
+            System.setProperty("java.security.krb5.kdc", config.valueOf("java.security.krb5.kdc"));
             HdfsConfiguration conf = new HdfsConfiguration();
             // enable kerberus
-            conf.set("hadoop.security.authentication", config.getHadoopAuthentication());
-            conf.set("hadoop.security.authorization", config.getHadoopAuthorization());
-            conf.set("hadoop.kerberos.keytab.login.autorenewal.enabled", config.getKerberosLoginAutorenewal());
+            conf.set("hadoop.security.authentication", config.valueOf("hadoop.security.authentication"));
+            conf.set("hadoop.security.authorization", config.valueOf("hadoop.security.authorization"));
+            conf.set("hadoop.kerberos.keytab.login.autorenewal.enabled", config.valueOf("kerberosLoginAutorenewal"));
             conf.set("fs.defaultFS", hdfsuri); // Set FileSystem URI
             conf.set("fs.hdfs.impl", DistributedFileSystem.class.getName()); // Maven stuff?
             conf.set("fs.file.impl", LocalFileSystem.class.getName()); // Maven stuff?
             /* hack for running locally with fake DNS records
              set this to true if overriding the host name in /etc/hosts*/
-            conf.set("dfs.client.use.datanode.hostname", config.getKerberosTestMode());
+            conf.set("dfs.client.use.datanode.hostname", config.valueOf("dfs.client.use.datanode.hostname"));
             /* server principal
              the kerberos principle that the namenode is using*/
-            conf.set("dfs.namenode.kerberos.principal.pattern", config.getKerberosPrincipal());
+            conf
+                    .set(
+                            "dfs.namenode.kerberos.principal.pattern",
+                            config.valueOf("dfs.namenode.kerberos.principal.pattern")
+                    );
             // set sasl
-            conf.set("dfs.data.transfer.protection", config.getDfsDataTransferProtection());
-            conf.set("dfs.encrypt.data.transfer.cipher.suites", config.getDfsEncryptDataTransferCipherSuites());
+            conf.set("dfs.data.transfer.protection", config.valueOf("dfs.data.transfer.protection"));
+            conf
+                    .set(
+                            "dfs.encrypt.data.transfer.cipher.suites",
+                            config.valueOf("dfs.encrypt.data.transfer.cipher.suites")
+                    );
             // filesystem for HDFS access is set here
             try {
                 fs = FileSystem.get(conf);

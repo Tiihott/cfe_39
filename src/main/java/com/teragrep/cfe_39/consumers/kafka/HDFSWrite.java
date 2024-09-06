@@ -45,7 +45,7 @@
  */
 package com.teragrep.cfe_39.consumers.kafka;
 
-import com.teragrep.cfe_39.configuration.Config;
+import com.teragrep.cfe_39.configuration.ConfigurationImpl;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
@@ -67,20 +67,20 @@ public class HDFSWrite implements AutoCloseable {
     private final HdfsConfiguration conf;
     private final String hdfsuri;
 
-    public HDFSWrite(Config config, String topic, String partition, long offset) throws IOException {
+    public HDFSWrite(ConfigurationImpl config, String topic, String partition, long offset) throws IOException {
 
-        Properties readerKafkaProperties = config.getKafkaConsumerProperties();
+        Properties readerKafkaProperties = config.toKafkaConsumerProperties();
         this.useMockKafkaConsumer = Boolean
                 .parseBoolean(readerKafkaProperties.getProperty("useMockKafkaConsumer", "false"));
 
         if (useMockKafkaConsumer) {
             // Code for initializing the class for mock hdfs database usage without kerberos.
-            hdfsuri = config.getHdfsuri();
+            hdfsuri = config.valueOf("hdfsuri");
 
             /* The filepath should be something like hdfs:///opt/teragrep/cfe_39/srv/topic_name/0.12345 where 12345 is offset and 0 the partition.
              In other words the directory named topic_name holds files that are named and arranged based on partition and the partition's offset. Every partition has its own set of unique offset values.
              These values should be fetched from config and other input parameters (topic+partition+offset).*/
-            path = config.getHdfsPath() + "/" + topic;
+            path = config.valueOf("hdfsPath") + "/" + topic;
             fileName = partition + "." + offset; // filename should be constructed from partition and offset.
 
             // ====== Init HDFS File System Object
@@ -104,35 +104,47 @@ public class HDFSWrite implements AutoCloseable {
         }
         else {
             // Code for initializing the class for kerberized HDFS database usage.
-            hdfsuri = config.getHdfsuri();
+            hdfsuri = config.valueOf("hdfsuri");
 
-            path = config.getHdfsPath() + "/" + topic;
+            path = config.valueOf("hdfsPath") + "/" + topic;
             fileName = partition + "." + offset;
 
             // set kerberos host and realm
-            System.setProperty("java.security.krb5.realm", config.getKerberosRealm());
-            System.setProperty("java.security.krb5.kdc", config.getKerberosHost());
+            System.setProperty("java.security.krb5.realm", config.valueOf("java.security.krb5.realm"));
+            System.setProperty("java.security.krb5.kdc", config.valueOf("java.security.krb5.kdc"));
 
             conf = new HdfsConfiguration();
 
             // enable kerberus
-            conf.set("hadoop.security.authentication", config.getHadoopAuthentication());
-            conf.set("hadoop.security.authorization", config.getHadoopAuthorization());
-            conf.set("hadoop.kerberos.keytab.login.autorenewal.enabled", config.getKerberosLoginAutorenewal());
+            conf.set("hadoop.security.authentication", config.valueOf("hadoop.security.authentication"));
+            conf.set("hadoop.security.authorization", config.valueOf("hadoop.security.authorization"));
+            conf
+                    .set(
+                            "hadoop.kerberos.keytab.login.autorenewal.enabled",
+                            config.valueOf("hadoop.kerberos.keytab.login.autorenewal.enabled")
+                    );
 
             conf.set("fs.defaultFS", hdfsuri); // Set FileSystem URI
             conf.set("fs.hdfs.impl", DistributedFileSystem.class.getName()); // Maven stuff?
             conf.set("fs.file.impl", LocalFileSystem.class.getName()); // Maven stuff?
 
             // hack for running locally with fake DNS records, set this to true if overriding the host name in /etc/hosts
-            conf.set("dfs.client.use.datanode.hostname", config.getKerberosTestMode());
+            conf.set("dfs.client.use.datanode.hostname", config.valueOf("dfs.client.use.datanode.hostname"));
 
             // server principal, the kerberos principle that the namenode is using
-            conf.set("dfs.namenode.kerberos.principal.pattern", config.getKerberosPrincipal());
+            conf
+                    .set(
+                            "dfs.namenode.kerberos.principal.pattern",
+                            config.valueOf("dfs.namenode.kerberos.principal.pattern")
+                    );
 
             // set sasl
-            conf.set("dfs.data.transfer.protection", config.getDfsDataTransferProtection());
-            conf.set("dfs.encrypt.data.transfer.cipher.suites", config.getDfsEncryptDataTransferCipherSuites());
+            conf.set("dfs.data.transfer.protection", config.valueOf("dfs.data.transfer.protection"));
+            conf
+                    .set(
+                            "dfs.encrypt.data.transfer.cipher.suites",
+                            config.valueOf("dfs.encrypt.data.transfer.cipher.suites")
+                    );
 
             // filesystem for HDFS access is set here
             fs = FileSystem.get(conf);
@@ -140,45 +152,39 @@ public class HDFSWrite implements AutoCloseable {
     }
 
     // Method for committing the AVRO-file to HDFS
-    public void commit(File syslogFile) {
+    public void commit(File syslogFile) throws IOException {
         // The code for writing the file to HDFS should be same for both test (non-kerberized access) and prod (kerberized access).
-        try {
-            //==== Create directory if not exists
-            Path workingDir = fs.getWorkingDirectory();
-            // Sets the directory where the data should be stored, if the directory doesn't exist then it's created.
-            Path newDirectoryPath = new Path(path);
-            if (!fs.exists(newDirectoryPath)) {
-                // Create new Directory
-                fs.mkdirs(newDirectoryPath);
-                LOGGER.info("Path <{}> created.", path);
-            }
-
-            //==== Write file
-            LOGGER.debug("Begin Write file into hdfs");
-            //Create a path
-            Path hdfswritepath = new Path(newDirectoryPath.toString() + "/" + fileName); // filename should be set according to the requirements: 0.12345 where 0 is Kafka partition and 12345 is Kafka offset.
-            if (fs.exists(hdfswritepath)) {
-                LOGGER
-                        .debug(
-                                "Deleting the seemingly duplicate source file {} because target file {} already exists in HDFS",
-                                syslogFile.getPath(), hdfswritepath
-                        );
-                syslogFile.delete();
-                throw new RuntimeException("File " + fileName + " already exists");
-            }
-            else {
-                LOGGER.debug("Target file <{}> doesn't exist, proceeding normally.", hdfswritepath);
-            }
-
-            Path path = new Path(syslogFile.getPath());
-            fs.copyFromLocalFile(path, hdfswritepath);
-            LOGGER.debug("End Write file into hdfs");
-            LOGGER.info("\nFile committed to HDFS, file writepath should be: <{}>\n", hdfswritepath);
-
+        //==== Create directory if not exists
+        Path workingDir = fs.getWorkingDirectory();
+        // Sets the directory where the data should be stored, if the directory doesn't exist then it's created.
+        Path newDirectoryPath = new Path(path);
+        if (!fs.exists(newDirectoryPath)) {
+            // Create new Directory
+            fs.mkdirs(newDirectoryPath);
+            LOGGER.info("Path <{}> created.", path);
         }
-        catch (IOException e) {
-            throw new RuntimeException(e);
+
+        //==== Write file
+        LOGGER.debug("Begin Write file into hdfs");
+        //Create a path
+        Path hdfswritepath = new Path(newDirectoryPath.toString() + "/" + fileName); // filename should be set according to the requirements: 0.12345 where 0 is Kafka partition and 12345 is Kafka offset.
+        if (fs.exists(hdfswritepath)) {
+            LOGGER
+                    .debug(
+                            "Deleting the seemingly duplicate source file {} because target file {} already exists in HDFS",
+                            syslogFile.getPath(), hdfswritepath
+                    );
+            syslogFile.delete();
+            throw new RuntimeException("File " + fileName + " already exists");
         }
+        else {
+            LOGGER.debug("Target file <{}> doesn't exist, proceeding normally.", hdfswritepath);
+        }
+
+        Path path = new Path(syslogFile.getPath());
+        fs.copyFromLocalFile(path, hdfswritepath);
+        LOGGER.debug("End Write file into hdfs");
+        LOGGER.info("\nFile committed to HDFS, file writepath should be: <{}>\n", hdfswritepath);
     }
 
     // try-with-resources handles closing the filesystem automatically.

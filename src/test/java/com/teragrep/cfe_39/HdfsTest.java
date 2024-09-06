@@ -47,7 +47,7 @@ package com.teragrep.cfe_39;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.teragrep.cfe_39.configuration.Config;
+import com.teragrep.cfe_39.configuration.ConfigurationImpl;
 import com.teragrep.cfe_39.consumers.kafka.HDFSWrite;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FileUtil;
@@ -70,7 +70,7 @@ public class HdfsTest {
 
     private static MiniDFSCluster hdfsCluster;
     private static File baseDir;
-    private static Config config;
+    private static ConfigurationImpl config;
     private FileSystem fs;
 
     // Start minicluster and initialize config.
@@ -80,12 +80,16 @@ public class HdfsTest {
             // Set system properties to use the valid configuration.
             System
                     .setProperty("cfe_39.config.location", System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
-            config = new Config();
+            config = new ConfigurationImpl().loadPropertiesFile();
             // Create a HDFS miniCluster
             baseDir = Files.createTempDirectory("test_hdfs").toFile().getAbsoluteFile();
             hdfsCluster = new TestMiniClusterFactory().create(config, baseDir);
-            config = new Config("hdfs://localhost:" + hdfsCluster.getNameNodePort() + "/");
-            fs = new TestFileSystemFactory().create(config.getHdfsuri());
+            config = config.with("hdfsuri", "hdfs://localhost:" + hdfsCluster.getNameNodePort() + "/");
+            config = config.with("queueDirectory", System.getProperty("user.dir") + "/etc/AVRO/");
+            config = config
+                    .with("log4j2.configurationFile", System.getProperty("user.dir") + "/rpm/resources/log4j2.properties");
+            config.configureLogging();
+            fs = new TestFileSystemFactory().create(config.valueOf("hdfsuri"));
         });
     }
 
@@ -103,11 +107,11 @@ public class HdfsTest {
     public void hdfsWriteTest() {
         // This test case is for testing the functionality of the HDFSWrite.java by writing pre-generated AVRO-files to the HDFS database and asserting the results are correct.
         assertDoesNotThrow(() -> {
-            Assertions.assertFalse(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic")));
+            Assertions.assertFalse(fs.exists(new Path(config.valueOf("hdfsPath") + "/" + "testConsumerTopic")));
 
             String pathname = System.getProperty("user.dir") + "/src/test/resources/mockHdfsFiles/0.9";
             java.nio.file.Path sourceFile = Paths.get(pathname);
-            java.nio.file.Path targetDir = Paths.get(config.getQueueDirectory());
+            java.nio.file.Path targetDir = Paths.get(config.valueOf("queueDirectory"));
             java.nio.file.Path targetFile = targetDir.resolve(sourceFile.getFileName());
             Assertions.assertFalse(targetFile.toFile().exists());
             Files.copy(sourceFile, targetFile);
@@ -122,16 +126,17 @@ public class HdfsTest {
             targetFile.toFile().delete(); // writer no longer handles deletion of the files
             Assertions.assertFalse(targetFile.toFile().exists());
             Assertions
-                    .assertEquals(1, fs.listStatus(new Path(config.getHdfsPath() + "/" + "testConsumerTopic")).length);
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic" + "/" + "0.9")));
+                    .assertEquals(1, fs.listStatus(new Path(config.valueOf("hdfsPath") + "/" + "testConsumerTopic")).length);
+            Assertions
+                    .assertTrue(fs.exists(new Path(config.valueOf("hdfsPath") + "/" + "testConsumerTopic" + "/" + "0.9")));
 
             pathname = System.getProperty("user.dir") + "/src/test/resources/mockHdfsFiles/0.13";
             sourceFile = Paths.get(pathname);
-            targetDir = Paths.get(config.getQueueDirectory());
+            targetDir = Paths.get(config.valueOf("queueDirectory"));
             targetFile = targetDir.resolve(sourceFile.getFileName());
             Files.copy(sourceFile, targetFile);
             Assertions.assertTrue(targetFile.toFile().exists());
-            avroFile = new File(config.getQueueDirectory() + "/0.13");
+            avroFile = new File(config.valueOf("queueDirectory") + "/0.13");
             recordOffsetJo = JsonParser
                     .parseString("{\"topic\":\"testConsumerTopic\", \"partition\":0, \"offset\":13}")
                     .getAsJsonObject();
@@ -141,9 +146,11 @@ public class HdfsTest {
             targetFile.toFile().delete(); // writer no longer handles deletion of the files
             Assertions.assertFalse(targetFile.toFile().exists());
             Assertions
-                    .assertEquals(2, fs.listStatus(new Path(config.getHdfsPath() + "/" + "testConsumerTopic")).length);
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic" + "/" + "0.9")));
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic" + "/" + "0.13")));
+                    .assertEquals(2, fs.listStatus(new Path(config.valueOf("hdfsPath") + "/" + "testConsumerTopic")).length);
+            Assertions
+                    .assertTrue(fs.exists(new Path(config.valueOf("hdfsPath") + "/" + "testConsumerTopic" + "/" + "0.9")));
+            Assertions
+                    .assertTrue(fs.exists(new Path(config.valueOf("hdfsPath") + "/" + "testConsumerTopic" + "/" + "0.13")));
         });
     }
 
@@ -151,11 +158,11 @@ public class HdfsTest {
     public void hdfsWriteExceptionTest() {
         // This test case is for testing the functionality of the HDFSWrite.java exception handling by trying to write the same file twice and asserting that the proper exception is thrown.
         assertDoesNotThrow(() -> {
-            Assertions.assertFalse(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic")));
+            Assertions.assertFalse(fs.exists(new Path(config.valueOf("hdfsPath") + "/" + "testConsumerTopic")));
 
             String pathname = System.getProperty("user.dir") + "/src/test/resources/mockHdfsFiles/0.9";
             java.nio.file.Path sourceFile = Paths.get(pathname);
-            java.nio.file.Path targetDir = Paths.get(config.getQueueDirectory());
+            java.nio.file.Path targetDir = Paths.get(config.valueOf("queueDirectory"));
             java.nio.file.Path targetFile = targetDir.resolve(sourceFile.getFileName());
             Assertions.assertFalse(targetFile.toFile().exists());
             Files.copy(sourceFile, targetFile);
@@ -170,12 +177,13 @@ public class HdfsTest {
             targetFile.toFile().delete(); // writer no longer handles deletion of the files
             Assertions.assertFalse(targetFile.toFile().exists());
             Assertions
-                    .assertEquals(1, fs.listStatus(new Path(config.getHdfsPath() + "/" + "testConsumerTopic")).length);
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic" + "/" + "0.9")));
+                    .assertEquals(1, fs.listStatus(new Path(config.valueOf("hdfsPath") + "/" + "testConsumerTopic")).length);
+            Assertions
+                    .assertTrue(fs.exists(new Path(config.valueOf("hdfsPath") + "/" + "testConsumerTopic" + "/" + "0.9")));
 
             Files.copy(sourceFile, targetFile);
             Assertions.assertTrue(targetFile.toFile().exists());
-            avroFile = new File(config.getQueueDirectory() + "/0.9");
+            avroFile = new File(config.valueOf("queueDirectory") + "/0.9");
             recordOffsetJo = JsonParser
                     .parseString("{\"topic\":\"testConsumerTopic\", \"partition\":0, \"offset\":9}")
                     .getAsJsonObject();
@@ -187,8 +195,9 @@ public class HdfsTest {
             targetFile.toFile().delete(); // writer no longer handles deletion of the files
             Assertions.assertFalse(targetFile.toFile().exists());
             Assertions
-                    .assertEquals(1, fs.listStatus(new Path(config.getHdfsPath() + "/" + "testConsumerTopic")).length);
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic" + "/" + "0.9")));
+                    .assertEquals(1, fs.listStatus(new Path(config.valueOf("hdfsPath") + "/" + "testConsumerTopic")).length);
+            Assertions
+                    .assertTrue(fs.exists(new Path(config.valueOf("hdfsPath") + "/" + "testConsumerTopic" + "/" + "0.9")));
         });
     }
 }

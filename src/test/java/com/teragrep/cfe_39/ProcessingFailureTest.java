@@ -46,7 +46,7 @@
 package com.teragrep.cfe_39;
 
 import com.teragrep.cfe_39.avro.SyslogRecord;
-import com.teragrep.cfe_39.configuration.Config;
+import com.teragrep.cfe_39.configuration.ConfigurationImpl;
 import com.teragrep.cfe_39.consumers.kafka.BatchDistributionImpl;
 import com.teragrep.cfe_39.consumers.kafka.KafkaRecordImpl;
 import com.teragrep.cfe_39.metrics.DurationStatistics;
@@ -82,7 +82,7 @@ public class ProcessingFailureTest {
 
     private static MiniDFSCluster hdfsCluster;
     private static File baseDir;
-    private static Config config;
+    private static ConfigurationImpl config;
     private FileSystem fs;
 
     // Prepares known state for testing.
@@ -92,12 +92,16 @@ public class ProcessingFailureTest {
             // Set system properties to use the valid configuration with skipping of broken records disabled.
             System
                     .setProperty("cfe_39.config.location", System.getProperty("user.dir") + "/src/test/resources/failProcessing.application.properties");
-            config = new Config();
+            config = new ConfigurationImpl().loadPropertiesFile();
             // Create a HDFS miniCluster
             baseDir = Files.createTempDirectory("test_hdfs").toFile().getAbsoluteFile();
             hdfsCluster = new TestMiniClusterFactory().create(config, baseDir);
-            config = new Config("hdfs://localhost:" + hdfsCluster.getNameNodePort() + "/");
-            fs = new TestFileSystemFactory().create(config.getHdfsuri());
+            config = config.with("hdfsuri", "hdfs://localhost:" + hdfsCluster.getNameNodePort() + "/");
+            config = config.with("queueDirectory", System.getProperty("user.dir") + "/etc/AVRO/");
+            config = config
+                    .with("log4j2.configurationFile", System.getProperty("user.dir") + "/rpm/resources/log4j2.properties");
+            config.configureLogging();
+            fs = new TestFileSystemFactory().create(config.valueOf("hdfsuri"));
         });
     }
 
@@ -148,14 +152,14 @@ public class ProcessingFailureTest {
             recordOffsetObjectList.add(recordOffsetObject);
             Exception e = Assertions.assertThrows(Exception.class, () -> output.accept(recordOffsetObjectList));
             Assertions.assertEquals("com.teragrep.rlo_06.PriorityParseException: PRIORITY < missing", e.getMessage());
-            Assertions.assertFalse(fs.exists(new Path(config.getHdfsPath() + "/" + "topicName" + "/" + "0.1")));
+            Assertions.assertFalse(fs.exists(new Path(config.valueOf("hdfsPath") + "/" + "topicName" + "/" + "0.1")));
             // No files stored to hdfs.
 
             // Assert the local avro file that should e empty.
-            File queueDirectory = new File(config.getQueueDirectory());
+            File queueDirectory = new File(config.valueOf("queueDirectory"));
             File[] files = queueDirectory.listFiles();
             Assertions.assertEquals(1, files.length);
-            String path2 = config.getQueueDirectory() + "/" + "topicName0.1";
+            String path2 = config.valueOf("queueDirectory") + "/" + "topicName0.1";
             File avroFile = new File(path2);
             Assertions.assertTrue(avroFile.exists());
             DatumReader<SyslogRecord> datumReader = new SpecificDatumReader<>(SyslogRecord.class);
@@ -208,14 +212,14 @@ public class ProcessingFailureTest {
                             "java.lang.NullPointerException: Cannot read the array length because \"buf\" is null",
                             e.getMessage()
                     );
-            Assertions.assertFalse(fs.exists(new Path(config.getHdfsPath() + "/" + "topicName" + "/" + "0.1")));
+            Assertions.assertFalse(fs.exists(new Path(config.valueOf("hdfsPath") + "/" + "topicName" + "/" + "0.1")));
             // No files stored to hdfs.
 
             // Assert the local avro file that should e empty.
-            File queueDirectory = new File(config.getQueueDirectory());
+            File queueDirectory = new File(config.valueOf("queueDirectory"));
             File[] files = queueDirectory.listFiles();
             Assertions.assertEquals(1, files.length);
-            String path2 = config.getQueueDirectory() + "/" + "topicName0.1";
+            String path2 = config.valueOf("queueDirectory") + "/" + "topicName0.1";
             File avroFile = new File(path2);
             Assertions.assertTrue(avroFile.exists());
             DatumReader<SyslogRecord> datumReader = new SpecificDatumReader<>(SyslogRecord.class);

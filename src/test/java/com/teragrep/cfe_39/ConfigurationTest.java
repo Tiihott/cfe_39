@@ -49,19 +49,31 @@ import com.teragrep.cfe_39.configuration.ConfigurationImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 public class ConfigurationTest {
 
     @Test
-    public void configurationTest() throws IOException {
-        System
-                .setProperty("cfe_39.config.location", System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
-        ConfigurationImpl configuration = new ConfigurationImpl().loadPropertiesFile();
-        String s = configuration.valueOf("hdfsuri");
-        Assertions.assertEquals("hdfs://localhost:45937/", s);
-        configuration = configuration.with("hdfsuri", "123456");
-        s = configuration.valueOf("hdfsuri");
-        Assertions.assertEquals("123456", s);
+    public void configurationTest() {
+        assertDoesNotThrow(() -> {
+            System
+                    .setProperty("cfe_39.config.location", System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
+            ConfigurationImpl configuration = new ConfigurationImpl().loadPropertiesFile();
+            String s = configuration.valueOf("hdfsuri");
+            Assertions.assertEquals("hdfs://localhost:45937/", s);
+            configuration = configuration.with("hdfsuri", "123456");
+            s = configuration.valueOf("hdfsuri");
+            Assertions.assertEquals("123456", s);
+        });
+    }
+
+    @Test
+    public void configurationTest2() {
+        assertDoesNotThrow(() -> {
+            System
+                    .setProperty("cfe_39.config.location", System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
+            ConfigurationImpl configuration = new ConfigurationImpl().loadPropertiesFile();
+            configuration.toKafkaConsumerProperties();
+        });
     }
 }

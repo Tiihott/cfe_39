@@ -46,7 +46,7 @@
 package com.teragrep.cfe_39;
 
 import com.teragrep.cfe_39.avro.SyslogRecord;
-import com.teragrep.cfe_39.configuration.Config;
+import com.teragrep.cfe_39.configuration.ConfigurationImpl;
 import com.teragrep.cfe_39.consumers.kafka.BatchDistributionImpl;
 import com.teragrep.cfe_39.consumers.kafka.KafkaRecordImpl;
 import com.teragrep.cfe_39.metrics.DurationStatistics;
@@ -82,7 +82,7 @@ public class BatchDistributionTest {
 
     private static MiniDFSCluster hdfsCluster;
     private static File baseDir;
-    private static Config config;
+    private static ConfigurationImpl config;
     private FileSystem fs;
 
     // Prepares known state for testing.
@@ -92,12 +92,16 @@ public class BatchDistributionTest {
             // Set system properties to use the valid configuration.
             System
                     .setProperty("cfe_39.config.location", System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
-            config = new Config();
+            config = new ConfigurationImpl().loadPropertiesFile();
             // Create a HDFS miniCluster
             baseDir = Files.createTempDirectory("test_hdfs").toFile().getAbsoluteFile();
             hdfsCluster = new TestMiniClusterFactory().create(config, baseDir);
-            config = new Config("hdfs://localhost:" + hdfsCluster.getNameNodePort() + "/");
-            fs = new TestFileSystemFactory().create(config.getHdfsuri());
+            config = config.with("hdfsuri", "hdfs://localhost:" + hdfsCluster.getNameNodePort() + "/");
+            config = config.with("queueDirectory", System.getProperty("user.dir") + "/etc/AVRO/");
+            config = config
+                    .with("log4j2.configurationFile", System.getProperty("user.dir") + "/rpm/resources/log4j2.properties");
+            config.configureLogging();
+            fs = new TestFileSystemFactory().create(config.valueOf("hdfsuri"));
         });
     }
 
@@ -109,7 +113,7 @@ public class BatchDistributionTest {
         });
         hdfsCluster.shutdown();
         FileUtil.fullyDelete(baseDir);
-        File queueDirectory = new File(config.getQueueDirectory());
+        File queueDirectory = new File(config.valueOf("queueDirectory"));
         File[] files = queueDirectory.listFiles();
         if (files[0].getName().equals("topicName0.1")) {
             files[0].delete();
@@ -320,7 +324,7 @@ public class BatchDistributionTest {
 
             // Assert that records 11-13 are present in local avro-file.
 
-            File queueDirectory = new File(config.getQueueDirectory());
+            File queueDirectory = new File(config.valueOf("queueDirectory"));
             File[] files = queueDirectory.listFiles();
             Assertions.assertEquals(1, files.length);
 
@@ -338,9 +342,9 @@ public class BatchDistributionTest {
 
             // Assert that records 0-10 are present in HDFS
 
-            Assertions.assertEquals(1, fs.listStatus(new Path(config.getHdfsPath() + "/" + "topicName")).length);
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "topicName" + "/" + "0.10")));
-            Path hdfsreadpath = new Path(config.getHdfsPath() + "/" + "topicName" + "/" + "0.10");
+            Assertions.assertEquals(1, fs.listStatus(new Path(config.valueOf("hdfsPath") + "/" + "topicName")).length);
+            Assertions.assertTrue(fs.exists(new Path(config.valueOf("hdfsPath") + "/" + "topicName" + "/" + "0.10")));
+            Path hdfsreadpath = new Path(config.valueOf("hdfsPath") + "/" + "topicName" + "/" + "0.10");
             //Init input stream
             FSDataInputStream inputStream = fs.open(hdfsreadpath);
             //The data is in AVRO-format, so it can't be read as a string.
@@ -390,9 +394,9 @@ public class BatchDistributionTest {
 
             List<KafkaRecordImpl> kafkaRecordListEmpty = new ArrayList<>();
             output.accept(kafkaRecordListEmpty);
-            Assertions.assertEquals(2, fs.listStatus(new Path(config.getHdfsPath() + "/" + "topicName")).length);
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "topicName" + "/" + "0.13")));
-            hdfsreadpath = new Path(config.getHdfsPath() + "/" + "topicName" + "/" + "0.13");
+            Assertions.assertEquals(2, fs.listStatus(new Path(config.valueOf("hdfsPath") + "/" + "topicName")).length);
+            Assertions.assertTrue(fs.exists(new Path(config.valueOf("hdfsPath") + "/" + "topicName" + "/" + "0.13")));
+            hdfsreadpath = new Path(config.valueOf("hdfsPath") + "/" + "topicName" + "/" + "0.13");
             //Init input stream
             FSDataInputStream inputStream2 = fs.open(hdfsreadpath);
             //The data is in AVRO-format, so it can't be read as a string.
@@ -485,13 +489,13 @@ public class BatchDistributionTest {
             kafkaRecordList.add(kafkaRecord3);
             output.accept(kafkaRecordList);
             output.accept(new ArrayList<>());
-            Assertions.assertEquals(1, fs.listStatus(new Path(config.getHdfsPath() + "/" + "topicName")).length);
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "topicName" + "/" + "0.3")));
+            Assertions.assertEquals(1, fs.listStatus(new Path(config.valueOf("hdfsPath") + "/" + "topicName")).length);
+            Assertions.assertTrue(fs.exists(new Path(config.valueOf("hdfsPath") + "/" + "topicName" + "/" + "0.3")));
             // File in hdfs does not contain any empty records.
 
             // Assert that the file in hdfs contains the expected one record.
 
-            Path hdfsreadpath = new Path(config.getHdfsPath() + "/" + "topicName" + "/" + "0.3");
+            Path hdfsreadpath = new Path(config.valueOf("hdfsPath") + "/" + "topicName" + "/" + "0.3");
             //Init input stream
             FSDataInputStream inputStream = fs.open(hdfsreadpath);
             //The data is in AVRO-format, so it can't be read as a string.
@@ -567,13 +571,13 @@ public class BatchDistributionTest {
             kafkaRecordList.add(kafkaRecord3);
             output.accept(kafkaRecordList);
             output.accept(new ArrayList<>());
-            Assertions.assertEquals(1, fs.listStatus(new Path(config.getHdfsPath() + "/" + "topicName")).length);
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "topicName" + "/" + "0.2")));
+            Assertions.assertEquals(1, fs.listStatus(new Path(config.valueOf("hdfsPath") + "/" + "topicName")).length);
+            Assertions.assertTrue(fs.exists(new Path(config.valueOf("hdfsPath") + "/" + "topicName" + "/" + "0.2")));
             // File in hdfs does not contain any records, but acts as a marker for kafka consumer offsets.
 
             // Assert that the file in hdfs contains the expected zero record.
 
-            Path hdfsreadpath = new Path(config.getHdfsPath() + "/" + "topicName" + "/" + "0.2");
+            Path hdfsreadpath = new Path(config.valueOf("hdfsPath") + "/" + "topicName" + "/" + "0.2");
             //Init input stream
             FSDataInputStream inputStream = fs.open(hdfsreadpath);
             //The data is in AVRO-format, so it can't be read as a string.
@@ -654,12 +658,12 @@ public class BatchDistributionTest {
             kafkaRecordList.add(kafkaRecord);
             output.accept(kafkaRecordList);
             output.accept(new ArrayList<>());
-            Assertions.assertEquals(1, fs.listStatus(new Path(config.getHdfsPath() + "/" + "topicName")).length);
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "topicName" + "/" + "0.3")));
+            Assertions.assertEquals(1, fs.listStatus(new Path(config.valueOf("hdfsPath") + "/" + "topicName")).length);
+            Assertions.assertTrue(fs.exists(new Path(config.valueOf("hdfsPath") + "/" + "topicName" + "/" + "0.3")));
 
             // Assert that the file in hdfs contains the expected single record.
 
-            Path hdfsreadpath = new Path(config.getHdfsPath() + "/" + "topicName" + "/" + "0.3");
+            Path hdfsreadpath = new Path(config.valueOf("hdfsPath") + "/" + "topicName" + "/" + "0.3");
             //Init input stream
             FSDataInputStream inputStream = fs.open(hdfsreadpath);
             //The data is in AVRO-format, so it can't be read as a string.

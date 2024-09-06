@@ -46,7 +46,7 @@
 package com.teragrep.cfe_39;
 
 import com.teragrep.cfe_39.avro.SyslogRecord;
-import com.teragrep.cfe_39.configuration.Config;
+import com.teragrep.cfe_39.configuration.ConfigurationImpl;
 import com.teragrep.cfe_39.consumers.kafka.KafkaRecordImpl;
 import com.teragrep.cfe_39.consumers.kafka.SyslogAvroWriter;
 import org.apache.avro.file.DataFileReader;
@@ -65,7 +65,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 public class SyslogAvroWriterTest {
 
-    private static Config config;
+    private static ConfigurationImpl config;
 
     // Prepares known state for testing.
     @BeforeEach
@@ -74,14 +74,18 @@ public class SyslogAvroWriterTest {
             // Set system properties to use the valid configuration.
             System
                     .setProperty("cfe_39.config.location", System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
-            config = new Config();
+            config = new ConfigurationImpl().loadPropertiesFile();
+            config = config.with("queueDirectory", System.getProperty("user.dir") + "/etc/AVRO/");
+            config = config
+                    .with("log4j2.configurationFile", System.getProperty("user.dir") + "/rpm/resources/log4j2.properties");
+            config.configureLogging();
         });
     }
 
     // Teardown the minicluster
     @AfterEach
     public void teardownMiniCluster() {
-        File queueDirectory = new File(config.getQueueDirectory());
+        File queueDirectory = new File(config.valueOf("queueDirectory"));
         File[] files = queueDirectory.listFiles();
         if (files[0].getName().equals("topicName0.1")) {
             files[0].delete();
@@ -93,9 +97,9 @@ public class SyslogAvroWriterTest {
 
         assertDoesNotThrow(() -> {
 
-            File queueDirectory = new File(config.getQueueDirectory());
+            File queueDirectory = new File(config.valueOf("queueDirectory"));
 
-            File syslogFile = new File(config.getQueueDirectory() + File.separator + "topicName0.1");
+            File syslogFile = new File(config.valueOf("queueDirectory") + File.separator + "topicName0.1");
 
             ConsumerRecord<byte[], byte[]> record0 = new ConsumerRecord<>(
                     "topicName",

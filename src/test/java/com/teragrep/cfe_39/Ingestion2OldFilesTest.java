@@ -46,7 +46,7 @@
 package com.teragrep.cfe_39;
 
 import com.teragrep.cfe_39.avro.SyslogRecord;
-import com.teragrep.cfe_39.configuration.Config;
+import com.teragrep.cfe_39.configuration.ConfigurationImpl;
 import com.teragrep.cfe_39.consumers.kafka.HdfsDataIngestion;
 import org.apache.avro.file.DataFileReader;
 import org.apache.avro.io.DatumReader;
@@ -76,7 +76,7 @@ public class Ingestion2OldFilesTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(Ingestion2OldFilesTest.class);
     private static MiniDFSCluster hdfsCluster;
     private static File baseDir;
-    private static Config config;
+    private static ConfigurationImpl config;
     private FileSystem fs;
 
     // Prepares known state for testing.
@@ -86,15 +86,20 @@ public class Ingestion2OldFilesTest {
             // Set system properties to use the valid configuration.
             System
                     .setProperty("cfe_39.config.location", System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
-            config = new Config();
+            config = new ConfigurationImpl().loadPropertiesFile();
             // Create a HDFS miniCluster
             baseDir = Files.createTempDirectory("test_hdfs").toFile().getAbsoluteFile();
             hdfsCluster = new TestMiniClusterFactory().create(config, baseDir);
-            config = new Config("hdfs://localhost:" + hdfsCluster.getNameNodePort() + "/", 30000);
-            fs = new TestFileSystemFactory().create(config.getHdfsuri());
+            config = config.with("hdfsuri", "hdfs://localhost:" + hdfsCluster.getNameNodePort() + "/");
+            config = config.with("maximumFileSize", "30000");
+            config = config.with("queueDirectory", System.getProperty("user.dir") + "/etc/AVRO/");
+            config = config
+                    .with("log4j2.configurationFile", System.getProperty("user.dir") + "/rpm/resources/log4j2.properties");
+            config.configureLogging();
+            fs = new TestFileSystemFactory().create(config.valueOf("hdfsuri"));
 
             // Inserts pre-made avro-files with old timestamps to HDFS, which are normally generated during data ingestion from mock kafka consumer.
-            String path = config.getHdfsPath() + "/" + "testConsumerTopic"; // "hdfs:///opt/teragrep/cfe_39/srv/testConsumerTopic"
+            String path = config.valueOf("hdfsPath") + "/" + "testConsumerTopic"; // "hdfs:///opt/teragrep/cfe_39/srv/testConsumerTopic"
             // Sets the directory where the data should be stored, if the directory doesn't exist then it's created.
             Path newDirectoryPath = new Path(path);
             // Create new Directory
@@ -149,23 +154,26 @@ public class Ingestion2OldFilesTest {
 
         assertDoesNotThrow(() -> {
             // Assert the known starting state.
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic")));
+            Assertions.assertTrue(fs.exists(new Path(config.valueOf("hdfsPath") + "/" + "testConsumerTopic")));
             Assertions
-                    .assertEquals(2, fs.listStatus(new Path(config.getHdfsPath() + "/" + "testConsumerTopic")).length);
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic" + "/" + "0.9")));
-            Assertions.assertTrue(fs.exists(new Path(config.getHdfsPath() + "/" + "testConsumerTopic" + "/" + "0.13")));
-            Assertions.assertTrue(config.getPruneOffset() >= 300000L); // Fails the test if the config is not correct.
-            Assertions.assertTrue((System.currentTimeMillis() - config.getPruneOffset()) > 157784760000L);
+                    .assertEquals(2, fs.listStatus(new Path(config.valueOf("hdfsPath") + "/" + "testConsumerTopic")).length);
+            Assertions
+                    .assertTrue(fs.exists(new Path(config.valueOf("hdfsPath") + "/" + "testConsumerTopic" + "/" + "0.9")));
+            Assertions
+                    .assertTrue(fs.exists(new Path(config.valueOf("hdfsPath") + "/" + "testConsumerTopic" + "/" + "0.13")));
+            Assertions.assertTrue(Long.parseLong(config.valueOf("pruneOffset")) >= 300000L); // Fails the test if the config is not correct.
+            Assertions
+                    .assertTrue((System.currentTimeMillis() - Long.parseLong(config.valueOf("pruneOffset"))) > 157784760000L);
             HdfsDataIngestion hdfsDataIngestion = new HdfsDataIngestion(config);
             Thread.sleep(10000);
             hdfsDataIngestion.run();
 
             // Assert that the kafka records were ingested and pruned correctly and the database doesn't hold any files.
             Assertions
-                    .assertEquals(0, fs.listStatus(new Path(config.getHdfsPath() + "/" + "testConsumerTopic")).length);
+                    .assertEquals(0, fs.listStatus(new Path(config.valueOf("hdfsPath") + "/" + "testConsumerTopic")).length);
 
             // Assert the avro-files that were too small to be stored in HDFS.
-            String path1 = config.getQueueDirectory() + "/" + "testConsumerTopic0.1";
+            String path1 = config.valueOf("queueDirectory") + "/" + "testConsumerTopic0.1";
             File avroFile1 = new File(path1);
             Assertions.assertTrue(avroFile1.exists());
             DatumReader<SyslogRecord> datumReader1 = new SpecificDatumReader<>(SyslogRecord.class);
@@ -179,7 +187,7 @@ public class Ingestion2OldFilesTest {
                 filenameList.add("testConsumerTopic" + i + "." + 1);
             }
             for (String fileName : filenameList) {
-                String path2 = config.getQueueDirectory() + "/" + fileName;
+                String path2 = config.valueOf("queueDirectory") + "/" + fileName;
                 File avroFile = new File(path2);
                 Assertions.assertTrue(filenameList.contains(avroFile.getName()));
                 DatumReader<SyslogRecord> datumReader = new SpecificDatumReader<>(SyslogRecord.class);
