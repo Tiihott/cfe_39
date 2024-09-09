@@ -158,7 +158,6 @@ public class Ingestion2NewFilesTest {
                     .assertTrue(fs.exists(new Path(config.valueOf("hdfsPath") + "/" + "testConsumerTopic" + "/" + "0.13")));
             Assertions.assertTrue(Long.parseLong(config.valueOf("pruneOffset")) >= 300000L); // Fails the test if the config is not correct.
             HdfsDataIngestion hdfsDataIngestion = new HdfsDataIngestion(config);
-            Thread.sleep(10000);
             hdfsDataIngestion.run();
 
             // Assert that the kafka records were ingested correctly and the database holds the expected 2 files.

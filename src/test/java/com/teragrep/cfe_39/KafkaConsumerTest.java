@@ -137,8 +137,6 @@ public class KafkaConsumerTest {
             Thread readThread = new Thread(null, readCoordinator, "testConsumerTopic1"); // Starts the thread with readCoordinator that creates the consumer and subscribes to the topic.
             readThread.start(); // Starts the thread, in other words proceeds to call run() function of ReadCoordinator.
 
-            Thread.sleep(1000);
-
             ReadCoordinator readCoordinator2 = new ReadCoordinator(
                     "testConsumerTopic",
                     config,
@@ -148,7 +146,7 @@ public class KafkaConsumerTest {
             Thread readThread2 = new Thread(null, readCoordinator2, "testConsumerTopic2"); // Starts the thread with readCoordinator that creates the consumer and subscribes to the topic.
             readThread2.start(); // Starts the thread, in other words proceeds to call run() function of ReadCoordinator.
 
-            Thread.sleep(10000);
+            Thread.sleep(10000); // Allow read threads to have enough time to execute their tasks properly.
 
             // Because BatchDistributionImpl can not be used as a functional interface, must do assertion through avro-files until better solution is found (add fake to interface?).
 
@@ -200,7 +198,7 @@ public class KafkaConsumerTest {
             Thread readThread = new Thread(null, readCoordinator, "testConsumerTopic0"); // Starts the thread with readCoordinator that creates the consumer and subscribes to the topic.
             readThread.start(); // Starts the thread, in other words proceeds to call run() function of ReadCoordinator.
 
-            Thread.sleep(10000);
+            Thread.sleep(10000); // Allow read thread to have enough time to execute the task properly.
 
             // Because BatchDistributionImpl can not be used as a functional interface, must do assertion through avro-files until better solution is found (add fake to interface?).
 

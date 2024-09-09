@@ -117,7 +117,6 @@ public class Ingestion0FilesTest {
             Assertions.assertTrue(Long.parseLong(config.valueOf("pruneOffset")) >= 300000L); // Fails the test if the config is not correct.
             Assertions.assertFalse(fs.exists(new Path(config.valueOf("hdfsPath") + "/" + "testConsumerTopic")));
             HdfsDataIngestion hdfsDataIngestion = new HdfsDataIngestion(config);
-            Thread.sleep(10000);
             hdfsDataIngestion.run();
         });
 

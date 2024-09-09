@@ -165,7 +165,6 @@ public class Ingestion2OldFilesTest {
             Assertions
                     .assertTrue((System.currentTimeMillis() - Long.parseLong(config.valueOf("pruneOffset"))) > 157784760000L);
             HdfsDataIngestion hdfsDataIngestion = new HdfsDataIngestion(config);
-            Thread.sleep(10000);
             hdfsDataIngestion.run();
 
             // Assert that the kafka records were ingested and pruned correctly and the database doesn't hold any files.
