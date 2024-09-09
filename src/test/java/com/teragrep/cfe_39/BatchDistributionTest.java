@@ -352,11 +352,10 @@ public class BatchDistributionTest {
                     inputStream,
                     new SpecificDatumReader<>(SyslogRecord.class)
             );
-            SyslogRecord syslogRecord = null;
             LOGGER.info("\nReading records from file {}:", hdfsreadpath);
 
             Assertions.assertTrue(reader.hasNext());
-            syslogRecord = reader.next(syslogRecord);
+            SyslogRecord syslogRecord = reader.next();
             Assertions.assertEquals(0, syslogRecord.getOffset());
             Assertions.assertTrue(reader.hasNext());
             syslogRecord = reader.next(syslogRecord);
@@ -404,11 +403,10 @@ public class BatchDistributionTest {
                     inputStream2,
                     new SpecificDatumReader<>(SyslogRecord.class)
             );
-            SyslogRecord syslogRecord2 = null;
             LOGGER.info("\nReading records from file {}:", hdfsreadpath);
 
             Assertions.assertTrue(reader2.hasNext());
-            syslogRecord2 = reader2.next(syslogRecord2);
+            SyslogRecord syslogRecord2 = reader2.next();
             Assertions.assertEquals(11, syslogRecord2.getOffset());
             Assertions.assertTrue(reader2.hasNext());
             syslogRecord2 = reader2.next(syslogRecord2);
@@ -503,11 +501,10 @@ public class BatchDistributionTest {
                     inputStream,
                     new SpecificDatumReader<>(SyslogRecord.class)
             );
-            SyslogRecord syslogRecord = null;
             LOGGER.info("\nReading records from file {}:", hdfsreadpath);
 
             Assertions.assertTrue(reader.hasNext());
-            syslogRecord = reader.next(syslogRecord);
+            SyslogRecord syslogRecord = reader.next();
             Assertions
                     .assertEquals(
                             "{\"timestamp\": 1650872090807000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \"0\", \"offset\": 3, \"origin\": \"jla-02.default\", \"payload\": \"[ERROR] 2022-04-25 07:34:50,806 com.teragrep.jla_02.Log4j Log - Log4j error says hi!\"}",
@@ -585,11 +582,10 @@ public class BatchDistributionTest {
                     inputStream,
                     new SpecificDatumReader<>(SyslogRecord.class)
             );
-            SyslogRecord syslogRecord = null;
             LOGGER.info("\nReading records from file {}:", hdfsreadpath);
 
             Assertions.assertTrue(reader.hasNext());
-            syslogRecord = reader.next(syslogRecord);
+            SyslogRecord syslogRecord = reader.next();
             Assertions
                     .assertEquals(
                             "{\"timestamp\": 1650872090807000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \"0\", \"offset\": 2, \"origin\": \"jla-02.default\", \"payload\": \"[ERROR] 2022-04-25 07:34:50,806 com.teragrep.jla_02.Log4j Log - Log4j error says hi!\"}",
@@ -671,11 +667,10 @@ public class BatchDistributionTest {
                     inputStream,
                     new SpecificDatumReader<>(SyslogRecord.class)
             );
-            SyslogRecord syslogRecord = null;
             LOGGER.info("\nReading records from file {}:", hdfsreadpath);
 
             Assertions.assertTrue(reader.hasNext());
-            syslogRecord = reader.next(syslogRecord);
+            SyslogRecord syslogRecord = reader.next();
             Assertions
                     .assertEquals(
                             "{\"timestamp\": 1650872090807000, \"directory\": \"jla02logger\", \"stream\": \"test:jla02logger:0\", \"host\": \"jla-02.default\", \"input\": \"imrelp:cfe-06-0.cfe-06.default:\", \"partition\": \"0\", \"offset\": 3, \"origin\": \"jla-02.default\", \"payload\": \"[ERROR] 2022-04-25 07:34:50,806 com.teragrep.jla_02.Log4j Log - Log4j error says hi!\"}",
