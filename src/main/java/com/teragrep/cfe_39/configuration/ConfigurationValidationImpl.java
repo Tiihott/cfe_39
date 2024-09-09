@@ -103,11 +103,6 @@ public final class ConfigurationValidationImpl implements ConfigurationValidatio
                     "numOfConsumers must be set to >0, got " + properties.getProperty("numOfConsumers")
             );
         }
-        if (Long.parseLong(properties.getProperty("maximumFileSize")) <= 0) {
-            throw new IllegalArgumentException(
-                    "maximumFileSize must be set to >0, got " + properties.getProperty("maximumFileSize")
-            );
-        }
         if (Long.parseLong(properties.getProperty("consumerTimeout")) <= 0) {
             throw new IllegalArgumentException(
                     "consumerTimeout must be set to >0, got " + properties.getProperty("consumerTimeout")
