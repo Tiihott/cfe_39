@@ -354,39 +354,11 @@ public class BatchDistributionTest {
             );
             LOGGER.info("\nReading records from file {}:", hdfsreadpath);
 
-            Assertions.assertTrue(reader.hasNext());
-            SyslogRecord syslogRecord = reader.next();
-            Assertions.assertEquals(0, syslogRecord.getOffset());
-            Assertions.assertTrue(reader.hasNext());
-            syslogRecord = reader.next(syslogRecord);
-            Assertions.assertEquals(1, syslogRecord.getOffset());
-            Assertions.assertTrue(reader.hasNext());
-            syslogRecord = reader.next(syslogRecord);
-            Assertions.assertEquals(2, syslogRecord.getOffset());
-            Assertions.assertTrue(reader.hasNext());
-            syslogRecord = reader.next(syslogRecord);
-            Assertions.assertEquals(3, syslogRecord.getOffset());
-            Assertions.assertTrue(reader.hasNext());
-            syslogRecord = reader.next(syslogRecord);
-            Assertions.assertEquals(4, syslogRecord.getOffset());
-            Assertions.assertTrue(reader.hasNext());
-            syslogRecord = reader.next(syslogRecord);
-            Assertions.assertEquals(5, syslogRecord.getOffset());
-            Assertions.assertTrue(reader.hasNext());
-            syslogRecord = reader.next(syslogRecord);
-            Assertions.assertEquals(6, syslogRecord.getOffset());
-            Assertions.assertTrue(reader.hasNext());
-            syslogRecord = reader.next(syslogRecord);
-            Assertions.assertEquals(7, syslogRecord.getOffset());
-            Assertions.assertTrue(reader.hasNext());
-            syslogRecord = reader.next(syslogRecord);
-            Assertions.assertEquals(8, syslogRecord.getOffset());
-            Assertions.assertTrue(reader.hasNext());
-            syslogRecord = reader.next(syslogRecord);
-            Assertions.assertEquals(9, syslogRecord.getOffset());
-            Assertions.assertTrue(reader.hasNext());
-            syslogRecord = reader.next(syslogRecord);
-            Assertions.assertEquals(10, syslogRecord.getOffset());
+            for (int i = 0; i <= 10; i++) {
+                Assertions.assertTrue(reader.hasNext());
+                SyslogRecord syslogRecord = reader.next();
+                Assertions.assertEquals(i, syslogRecord.getOffset());
+            }
             Assertions.assertFalse(reader.hasNext());
 
             // Use empty batch to flush the local files to HDFS.
@@ -405,15 +377,11 @@ public class BatchDistributionTest {
             );
             LOGGER.info("\nReading records from file {}:", hdfsreadpath);
 
-            Assertions.assertTrue(reader2.hasNext());
-            SyslogRecord syslogRecord2 = reader2.next();
-            Assertions.assertEquals(11, syslogRecord2.getOffset());
-            Assertions.assertTrue(reader2.hasNext());
-            syslogRecord2 = reader2.next(syslogRecord2);
-            Assertions.assertEquals(12, syslogRecord2.getOffset());
-            Assertions.assertTrue(reader2.hasNext());
-            syslogRecord2 = reader2.next(syslogRecord2);
-            Assertions.assertEquals(13, syslogRecord2.getOffset());
+            for (int i = 11; i <= 13; i++) {
+                Assertions.assertTrue(reader2.hasNext());
+                SyslogRecord syslogRecord2 = reader2.next();
+                Assertions.assertEquals(i, syslogRecord2.getOffset());
+            }
             Assertions.assertFalse(reader2.hasNext());
         });
     }
