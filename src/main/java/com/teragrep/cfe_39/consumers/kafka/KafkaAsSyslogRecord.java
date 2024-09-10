@@ -56,7 +56,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 
-public class KafkaAsSyslogRecord {
+public final class KafkaAsSyslogRecord {
 
     private final SDVector eventNodeSourceSource;
     private final SDVector eventNodeRelaySource;

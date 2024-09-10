@@ -65,7 +65,7 @@ import java.util.*;
  * @author Mikko Kortelainen
  */
 @VisibleForTesting
-public class MockKafkaConsumerFactory {
+public final class MockKafkaConsumerFactory {
 
     final static private Logger LOGGER = LoggerFactory.getLogger(MockKafkaConsumerFactory.class);
 

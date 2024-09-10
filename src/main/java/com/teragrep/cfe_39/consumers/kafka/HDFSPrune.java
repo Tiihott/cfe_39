@@ -54,7 +54,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-public class HDFSPrune {
+public final class HDFSPrune {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HDFSPrune.class);
     private final FileSystem fs;

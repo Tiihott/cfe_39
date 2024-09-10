@@ -57,7 +57,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 
-public class SyslogAvroWriter implements AutoCloseable {
+public final class SyslogAvroWriter implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SyslogAvroWriter.class);
 

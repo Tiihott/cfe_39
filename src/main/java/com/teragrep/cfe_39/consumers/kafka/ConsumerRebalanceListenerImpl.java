@@ -62,7 +62,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ConsumerRebalanceListenerImpl implements ConsumerRebalanceListener {
+public final class ConsumerRebalanceListenerImpl implements ConsumerRebalanceListener {
 
     private final Logger LOGGER = LoggerFactory.getLogger(ConsumerRebalanceListenerImpl.class);
 

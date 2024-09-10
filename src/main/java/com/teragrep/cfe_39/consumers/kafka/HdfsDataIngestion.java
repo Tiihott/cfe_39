@@ -70,21 +70,19 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 // Ingests data for HDFS database, periodically scans kafka for new topics based on config.getQueueTopicPattern() and creates kafka topic consumer groups for the new topics that will store the records to HDFS.
-public class HdfsDataIngestion {
+public final class HdfsDataIngestion {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HdfsDataIngestion.class);
     private final ConfigurationImpl config;
     private final org.apache.kafka.clients.consumer.Consumer<byte[], byte[]> kafkaConsumer;
     private final List<Thread> threads = new ArrayList<>();
     private final Set<String> activeTopics = new HashSet<>();
-    private boolean keepRunning;
-    private boolean useMockKafkaConsumer;
+    private final boolean useMockKafkaConsumer;
     private final int numOfConsumers;
-    private Map<TopicPartition, Long> hdfsStartOffsets;
+    private final Map<TopicPartition, Long> hdfsStartOffsets;
     private final FileSystem fs;
 
     public HdfsDataIngestion(ConfigurationImpl config) throws IOException {
-        keepRunning = true;
         this.config = config;
         Properties readerKafkaProperties = config.toKafkaConsumerProperties();
         this.numOfConsumers = Integer.parseInt(config.valueOf("numOfConsumers"));
@@ -168,13 +166,15 @@ public class HdfsDataIngestion {
 
         // Generates offsets of the already committed records for Kafka and passes them to the kafka consumers.
         try (HDFSRead hr = new HDFSRead(config, fs)) {
-            hdfsStartOffsets = hr.hdfsStartOffsets();
+            hdfsStartOffsets.clear();
+            hdfsStartOffsets.putAll(hr.hdfsStartOffsets());
             LOGGER.debug("topicPartitionStartMap generated succesfully: <{}>", hdfsStartOffsets);
         }
         catch (IOException e) {
             throw new RuntimeException(e);
         }
 
+        boolean keepRunning = true;
         while (keepRunning) {
             if ("kerberos".equals(config.valueOf("hadoop.security.authentication"))) {
                 UserGroupInformation.getLoginUser().checkTGTAndReloginFromKeytab();

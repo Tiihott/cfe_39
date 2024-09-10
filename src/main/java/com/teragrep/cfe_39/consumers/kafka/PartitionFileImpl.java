@@ -57,7 +57,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PartitionFileImpl implements PartitionFile {
+public final class PartitionFileImpl implements PartitionFile {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PartitionFileImpl.class);
 

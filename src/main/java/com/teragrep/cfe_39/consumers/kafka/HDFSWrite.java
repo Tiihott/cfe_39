@@ -57,7 +57,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Properties;
 
-public class HDFSWrite implements AutoCloseable {
+public final class HDFSWrite implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HDFSWrite.class);
     private final String fileName;
