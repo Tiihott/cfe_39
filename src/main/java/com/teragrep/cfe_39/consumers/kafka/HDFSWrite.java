@@ -47,113 +47,30 @@ package com.teragrep.cfe_39.consumers.kafka;
 
 import com.teragrep.cfe_39.configuration.ConfigurationImpl;
 import org.apache.hadoop.fs.*;
-import org.apache.hadoop.hdfs.DistributedFileSystem;
-import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
-import java.util.Properties;
 
 public final class HDFSWrite implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HDFSWrite.class);
     private final String fileName;
     private final String path;
-    private final FileSystem fs;
-    private final boolean useMockKafkaConsumer; // Defines if mock HDFS database is used for testing
-    private final HdfsConfiguration conf;
-    private final String hdfsuri;
+    private final ConfigurationImpl configuration;
 
-    public HDFSWrite(ConfigurationImpl config, String topic, String partition, long offset) throws IOException {
-
-        Properties readerKafkaProperties = config.toKafkaConsumerProperties();
-        this.useMockKafkaConsumer = Boolean
-                .parseBoolean(readerKafkaProperties.getProperty("useMockKafkaConsumer", "false"));
-
-        if (useMockKafkaConsumer) {
-            // Code for initializing the class for mock hdfs database usage without kerberos.
-            hdfsuri = config.valueOf("hdfsuri");
-
-            /* The filepath should be something like hdfs:///opt/teragrep/cfe_39/srv/topic_name/0.12345 where 12345 is offset and 0 the partition.
-             In other words the directory named topic_name holds files that are named and arranged based on partition and the partition's offset. Every partition has its own set of unique offset values.
-             These values should be fetched from config and other input parameters (topic+partition+offset).*/
-            path = config.valueOf("hdfsPath") + "/" + topic;
-            fileName = partition + "." + offset; // filename should be constructed from partition and offset.
-
-            // ====== Init HDFS File System Object
-            conf = new HdfsConfiguration();
-            // Set FileSystem URI
-            conf.set("fs.defaultFS", hdfsuri);
-            // Because of Maven
-            conf.set("fs.hdfs.impl", DistributedFileSystem.class.getName());
-            conf.set("fs.file.impl", LocalFileSystem.class.getName());
-            // Set HADOOP user here.
-            System.setProperty("HADOOP_USER_NAME", "hdfs");
-            System.setProperty("hadoop.home.dir", "/");
-            // filesystem for HDFS access is set here
-            try {
-                fs = FileSystem.get(URI.create(hdfsuri), conf);
-            }
-            catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-
-        }
-        else {
-            // Code for initializing the class for kerberized HDFS database usage.
-            hdfsuri = config.valueOf("hdfsuri");
-
-            path = config.valueOf("hdfsPath") + "/" + topic;
-            fileName = partition + "." + offset;
-
-            // set kerberos host and realm
-            System.setProperty("java.security.krb5.realm", config.valueOf("java.security.krb5.realm"));
-            System.setProperty("java.security.krb5.kdc", config.valueOf("java.security.krb5.kdc"));
-
-            conf = new HdfsConfiguration();
-
-            // enable kerberus
-            conf.set("hadoop.security.authentication", config.valueOf("hadoop.security.authentication"));
-            conf.set("hadoop.security.authorization", config.valueOf("hadoop.security.authorization"));
-            conf
-                    .set(
-                            "hadoop.kerberos.keytab.login.autorenewal.enabled",
-                            config.valueOf("hadoop.kerberos.keytab.login.autorenewal.enabled")
-                    );
-
-            conf.set("fs.defaultFS", hdfsuri); // Set FileSystem URI
-            conf.set("fs.hdfs.impl", DistributedFileSystem.class.getName()); // Maven stuff?
-            conf.set("fs.file.impl", LocalFileSystem.class.getName()); // Maven stuff?
-
-            // hack for running locally with fake DNS records, set this to true if overriding the host name in /etc/hosts
-            conf.set("dfs.client.use.datanode.hostname", config.valueOf("dfs.client.use.datanode.hostname"));
-
-            // server principal, the kerberos principle that the namenode is using
-            conf
-                    .set(
-                            "dfs.namenode.kerberos.principal.pattern",
-                            config.valueOf("dfs.namenode.kerberos.principal.pattern")
-                    );
-
-            // set sasl
-            conf.set("dfs.data.transfer.protection", config.valueOf("dfs.data.transfer.protection"));
-            conf
-                    .set(
-                            "dfs.encrypt.data.transfer.cipher.suites",
-                            config.valueOf("dfs.encrypt.data.transfer.cipher.suites")
-                    );
-
-            // filesystem for HDFS access is set here
-            fs = FileSystem.get(conf);
-        }
+    public HDFSWrite(ConfigurationImpl config, String topic, String partition, long offset) {
+        this.configuration = config;
+        path = config.valueOf("hdfsPath") + "/" + topic;
+        fileName = partition + "." + offset; // filename should be constructed from partition and offset.
     }
 
     // Method for committing the AVRO-file to HDFS
     public void commit(File syslogFile) throws IOException {
         // The code for writing the file to HDFS should be same for both test (non-kerberized access) and prod (kerberized access).
+        FileSystemFactoryImpl fileSystemFactoryImpl = new FileSystemFactoryImpl(configuration);
+        FileSystem fs = fileSystemFactoryImpl.create(false);
         //==== Create directory if not exists
         Path workingDir = fs.getWorkingDirectory();
         // Sets the directory where the data should be stored, if the directory doesn't exist then it's created.

@@ -47,9 +47,6 @@ package com.teragrep.cfe_39.consumers.kafka;
 
 import com.teragrep.cfe_39.configuration.ConfigurationImpl;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocalFileSystem;
-import org.apache.hadoop.hdfs.DistributedFileSystem;
-import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.common.TopicPartition;
@@ -57,7 +54,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -89,70 +85,17 @@ public final class ConsumerRebalanceListenerImpl implements ConsumerRebalanceLis
 
     @Override
     public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
-        LOGGER.info("onPartitionsAssigned triggered");
         // Generates offsets of the already committed records for Kafka and passes them to the kafka consumers.
+        LOGGER.info("onPartitionsAssigned triggered");
+        // Initialize FileSystem
+        FileSystemFactoryImpl fileSystemFactoryImpl = new FileSystemFactoryImpl(config);
         FileSystem fs;
-        if (!"kerberos".equals(config.valueOf("hadoop.security.authentication"))) {
-            // Initializing the FileSystem with minicluster.
-            String hdfsuri = config.valueOf("hdfsuri");
-            // ====== Init HDFS File System Object
-            HdfsConfiguration conf = new HdfsConfiguration();
-            // Set FileSystem URI
-            conf.set("fs.defaultFS", hdfsuri);
-            // Because of Maven
-            conf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
-            conf.set("fs.file.impl", org.apache.hadoop.fs.LocalFileSystem.class.getName());
-            // Set HADOOP user
-            System.setProperty("HADOOP_USER_NAME", "hdfs");
-            System.setProperty("hadoop.home.dir", "/");
-            //Get the filesystem - HDFS
-            try {
-                fs = FileSystem.get(URI.create(hdfsuri), conf);
-            }
-            catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+        try {
+            fs = fileSystemFactoryImpl.create(false);
         }
-        else {
-            // Initializing the FileSystem with kerberos.
-            String hdfsuri = config.valueOf("hdfsuri"); // Get from config.
-            // set kerberos host and realm
-            System.setProperty("java.security.krb5.realm", config.valueOf("java.security.krb5.realm"));
-            System.setProperty("java.security.krb5.kdc", config.valueOf("java.security.krb5.kdc"));
-            HdfsConfiguration conf = new HdfsConfiguration();
-            // enable kerberus
-            conf.set("hadoop.security.authentication", config.valueOf("hadoop.security.authentication"));
-            conf.set("hadoop.security.authorization", config.valueOf("hadoop.security.authorization"));
-            conf.set("hadoop.kerberos.keytab.login.autorenewal.enabled", config.valueOf("kerberosLoginAutorenewal"));
-            conf.set("fs.defaultFS", hdfsuri); // Set FileSystem URI
-            conf.set("fs.hdfs.impl", DistributedFileSystem.class.getName()); // Maven stuff?
-            conf.set("fs.file.impl", LocalFileSystem.class.getName()); // Maven stuff?
-            /* hack for running locally with fake DNS records
-             set this to true if overriding the host name in /etc/hosts*/
-            conf.set("dfs.client.use.datanode.hostname", config.valueOf("dfs.client.use.datanode.hostname"));
-            /* server principal
-             the kerberos principle that the namenode is using*/
-            conf
-                    .set(
-                            "dfs.namenode.kerberos.principal.pattern",
-                            config.valueOf("dfs.namenode.kerberos.principal.pattern")
-                    );
-            // set sasl
-            conf.set("dfs.data.transfer.protection", config.valueOf("dfs.data.transfer.protection"));
-            conf
-                    .set(
-                            "dfs.encrypt.data.transfer.cipher.suites",
-                            config.valueOf("dfs.encrypt.data.transfer.cipher.suites")
-                    );
-            // filesystem for HDFS access is set here
-            try {
-                fs = FileSystem.get(conf);
-            }
-            catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+        catch (IOException e) {
+            throw new RuntimeException(e);
         }
-
         Map<TopicPartition, Long> hdfsStartOffsets = new HashMap<>();
         try (HDFSRead hr = new HDFSRead(config, fs)) {
             hdfsStartOffsets = hr.hdfsStartOffsets();
