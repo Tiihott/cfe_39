@@ -55,7 +55,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 
-public class KafkaReader implements AutoCloseable {
+public final class KafkaReader implements AutoCloseable {
 
     private final Logger LOGGER = LoggerFactory.getLogger(KafkaReader.class);
 

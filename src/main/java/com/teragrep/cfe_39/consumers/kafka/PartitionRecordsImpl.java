@@ -54,7 +54,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PartitionRecordsImpl implements PartitionRecords {
+public final class PartitionRecordsImpl implements PartitionRecords {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PartitionRecordsImpl.class);
 

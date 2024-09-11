@@ -60,7 +60,7 @@ import java.util.*;
   The target where the record is stored in HDFS is based on the topic, partition and offset. ie. topic_name/0.123456 where offset is 123456
  The mock consumer is activated for testing using the configuration file: readerKafkaProperties.getProperty("useMockKafkaConsumer", "false")*/
 
-public class BatchDistributionImpl implements BatchDistribution {
+public final class BatchDistributionImpl implements BatchDistribution {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BatchDistributionImpl.class);
 
