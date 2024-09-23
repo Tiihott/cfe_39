@@ -207,11 +207,7 @@ public class ProcessingFailureTest {
             recordOffsetObjectList.add(recordOffsetObject);
             RuntimeException e = Assertions
                     .assertThrows(RuntimeException.class, () -> output.accept(recordOffsetObjectList));
-            Assertions
-                    .assertEquals(
-                            "java.lang.NullPointerException: Cannot read the array length because \"buf\" is null",
-                            e.getMessage()
-                    );
+            Assertions.assertEquals("java.lang.NullPointerException", e.getMessage());
             Assertions.assertFalse(fs.exists(new Path(config.valueOf("hdfsPath") + "/" + "topicName" + "/" + "0.1")));
             // No files stored to hdfs.
 
