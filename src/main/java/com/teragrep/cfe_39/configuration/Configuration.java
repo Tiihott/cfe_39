@@ -46,18 +46,15 @@
 package com.teragrep.cfe_39.configuration;
 
 import java.io.IOException;
-import java.util.Properties;
 
 public interface Configuration {
 
-    ConfigurationImpl loadPropertiesFile() throws IOException;
+    void loadPropertiesFile(String configurationFile) throws IOException;
 
-    Configuration with(String key, String value);
+    void with(String key, String value);
 
     String valueOf(String key);
 
-    Properties toKafkaConsumerProperties();
-
-    void configureLogging() throws IOException;
+    boolean has(String key);
 
 }

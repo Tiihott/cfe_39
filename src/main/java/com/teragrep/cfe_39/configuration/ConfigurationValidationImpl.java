@@ -54,26 +54,30 @@ public final class ConfigurationValidationImpl implements ConfigurationValidatio
 
     private final Logger LOGGER = LoggerFactory.getLogger(ConfigurationValidationImpl.class);
     private final Set<String> requiredKeys;
+    private final Set<String> optionalKeys;
 
     public ConfigurationValidationImpl() {
         this.requiredKeys = new HashSet<>();
+        this.optionalKeys = new HashSet<>();
     }
 
+    @Override
     public void validate(Properties properties) {
         validateKeys(properties);
         validateValues(properties);
     }
 
     private void validateKeys(Properties properties) {
-        if (requiredKeys.isEmpty()) {
+        if (requiredKeys.isEmpty() && optionalKeys.isEmpty()) {
             loadRequiredKeys();
+            loadOptionalKeys();
         }
         int requiredCount = 0;
         for (Map.Entry keyValuePair : properties.entrySet()) {
             if (requiredKeys.contains(keyValuePair.getKey().toString())) {
                 requiredCount++;
             }
-            else {
+            else if (!optionalKeys.contains(keyValuePair.getKey().toString())) {
                 throw new IllegalStateException("Unauthorized key " + keyValuePair.getKey().toString());
             }
         }
@@ -111,7 +115,7 @@ public final class ConfigurationValidationImpl implements ConfigurationValidatio
     }
 
     private void loadRequiredKeys() {
-        // Common
+        // Required keys
         requiredKeys.add("pruneOffset");
         requiredKeys.add("queueDirectory");
         requiredKeys.add("maximumFileSize");
@@ -120,35 +124,13 @@ public final class ConfigurationValidationImpl implements ConfigurationValidatio
         requiredKeys.add("consumerTimeout");
         requiredKeys.add("skipNonRFC5424Records");
         requiredKeys.add("skipEmptyRFC5424Records");
-        requiredKeys.add("log4j2.configurationFile");
-        // kafka
-        requiredKeys.add("java.security.auth.login.config");
-        requiredKeys.add("bootstrap.servers");
-        requiredKeys.add("auto.offset.reset");
-        requiredKeys.add("enable.auto.commit");
-        requiredKeys.add("group.id");
-        requiredKeys.add("security.protocol");
-        requiredKeys.add("sasl.mechanism");
-        requiredKeys.add("max.poll.records");
-        requiredKeys.add("fetch.max.bytes");
-        requiredKeys.add("request.timeout.ms");
-        requiredKeys.add("max.poll.interval.ms");
-        requiredKeys.add("useMockKafkaConsumer");
-        // HDFS
-        requiredKeys.add("hdfsPath");
-        requiredKeys.add("hdfsuri");
-        requiredKeys.add("dfs.client.use.datanode.hostname");
-        requiredKeys.add("dfs.data.transfer.protection");
-        requiredKeys.add("dfs.encrypt.data.transfer.cipher.suites");
-        // Kerberos
-        requiredKeys.add("hadoop.security.authentication");
-        requiredKeys.add("hadoop.security.authorization");
-        requiredKeys.add("dfs.namenode.kerberos.principal.pattern");
-        requiredKeys.add("java.security.krb5.kdc");
-        requiredKeys.add("java.security.krb5.realm");
-        requiredKeys.add("KerberosKeytabUser");
-        requiredKeys.add("KerberosKeytabPath");
-        requiredKeys.add("kerberosLoginAutorenewal");
+    }
+
+    private void loadOptionalKeys() {
+        // Optional keys that have default values in place.
+        optionalKeys.add("log4j2.configurationFile");
+        optionalKeys.add("ingress.configurationFile");
+        optionalKeys.add("egress.configurationFile");
     }
 
 }

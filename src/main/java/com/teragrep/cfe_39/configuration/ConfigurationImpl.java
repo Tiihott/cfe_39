@@ -56,71 +56,104 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
+// This class will only hold the common configuration parameters. Rename to CommonConfiguration?
 public final class ConfigurationImpl implements Configuration {
 
     private final Logger LOGGER = LoggerFactory.getLogger(ConfigurationImpl.class);
+
     private final Properties properties;
     private final ConfigurationValidationImpl configurationValidationImpl;
+    private final HdfsConfiguration hdfsConfiguration;
+    private final KafkaConfiguration kafkaConfiguration;
 
     public ConfigurationImpl() {
-        this(new Properties());
+        this(new Properties(), new HdfsConfiguration(), new KafkaConfiguration());
     }
 
-    public ConfigurationImpl(Properties properties) {
+    // This approach should be fine. The passed properties can be used for sourcing the other properties files.
+    public ConfigurationImpl(
+            Properties properties,
+            HdfsConfiguration hdfsConfiguration,
+            KafkaConfiguration kafkaConfiguration
+    ) {
         this.properties = properties;
-        configurationValidationImpl = new ConfigurationValidationImpl();
+        this.hdfsConfiguration = hdfsConfiguration; // Initializes HdfsConfiguration
+        this.kafkaConfiguration = kafkaConfiguration; // Initializes KafkaConfiguration
+        this.configurationValidationImpl = new ConfigurationValidationImpl();
     }
 
+    // This method should load the common properties belonging to this configuration object, but it should also ask the other configuration objects to do the same.
     @Override
-    public ConfigurationImpl loadPropertiesFile() throws IOException {
-        final Properties newProperties = new Properties();
-        Path configPath = Paths
-                .get(System.getProperty("cfe_39.config.location", "/opt/teragrep/cfe_39/etc/application.properties"));
+    public void loadPropertiesFile(String configurationFile) throws IOException {
+        Path configPath = Paths.get(configurationFile);
         LOGGER.info("Loading application config <[{}]>", configPath.toAbsolutePath());
         try (InputStream inputStream = Files.newInputStream(configPath)) {
-            newProperties.load(inputStream);
-            LOGGER.debug("Got configuration: <{}>", newProperties);
+            properties.load(inputStream);
+            LOGGER.debug("Got configuration: <{}>", properties);
+            configurationValidationImpl.validate(properties);
         }
-        configurationValidationImpl.validate(newProperties);
-        return new ConfigurationImpl(newProperties);
+        // also load the hdfs and kafka configuration files.
+        hdfsConfiguration
+                .loadPropertiesFile(properties.getProperty("egress.configurationFile", System.getProperty("user.dir") + "/rpm/resources/egress.properties"));
+        kafkaConfiguration
+                .loadPropertiesFile(properties.getProperty("ingress.configurationFile", System.getProperty("user.dir") + "/rpm/resources/ingress.properties"));
+        configureLogging();
     }
 
+    // Used only during testing to change existing property values, make a fake for this.
     @Override
-    public ConfigurationImpl with(String key, String value) {
-        final Properties newProperties = new Properties();
-        newProperties.putAll(properties);
-        newProperties.setProperty(key, value);
-        configurationValidationImpl.validate(newProperties);
-        return new ConfigurationImpl(newProperties);
+    public void with(String key, String value) {
+        if (this.has(key)) {
+            properties.setProperty(key, value);
+            configurationValidationImpl.validate(properties);
+        }
+        else if (hdfsConfiguration.has(key)) {
+            hdfsConfiguration.with(key, value);
+        }
+        else if (kafkaConfiguration.has(key)) {
+            kafkaConfiguration.with(key, value);
+        }
+        else {
+            throw new IllegalArgumentException("Key not found: " + key);
+        }
     }
 
     @Override
     public String valueOf(String key) {
-        if (properties.containsKey(key)) {
+        if (this.has(key)) {
             return properties.getProperty(key);
+        }
+        if (kafkaConfiguration.has(key)) {
+            return kafkaConfiguration.valueOf(key);
+        }
+        if (hdfsConfiguration.has(key)) {
+            return hdfsConfiguration.valueOf(key);
         }
         throw new IllegalArgumentException("Key not found: " + key);
     }
 
     @Override
+    public boolean has(String key) {
+        return properties.containsKey(key);
+    }
+
     public Properties toKafkaConsumerProperties() {
         Properties kafkaProperties = new Properties();
-        kafkaProperties.put("bootstrap.servers", valueOf("bootstrap.servers"));
-        kafkaProperties.put("auto.offset.reset", valueOf("auto.offset.reset"));
-        kafkaProperties.put("enable.auto.commit", valueOf("enable.auto.commit"));
-        kafkaProperties.put("group.id", valueOf("group.id"));
-        kafkaProperties.put("security.protocol", valueOf("security.protocol"));
-        kafkaProperties.put("sasl.mechanism", valueOf("sasl.mechanism"));
-        kafkaProperties.put("max.poll.records", valueOf("max.poll.records"));
-        kafkaProperties.put("fetch.max.bytes", valueOf("fetch.max.bytes"));
-        kafkaProperties.put("request.timeout.ms", valueOf("request.timeout.ms"));
-        kafkaProperties.put("max.poll.interval.ms", valueOf("max.poll.interval.ms"));
-        kafkaProperties.put("useMockKafkaConsumer", valueOf("useMockKafkaConsumer"));
+        kafkaProperties.put("bootstrap.servers", kafkaConfiguration.valueOf("bootstrap.servers"));
+        kafkaProperties.put("auto.offset.reset", kafkaConfiguration.valueOf("auto.offset.reset"));
+        kafkaProperties.put("enable.auto.commit", kafkaConfiguration.valueOf("enable.auto.commit"));
+        kafkaProperties.put("group.id", kafkaConfiguration.valueOf("group.id"));
+        kafkaProperties.put("security.protocol", kafkaConfiguration.valueOf("security.protocol"));
+        kafkaProperties.put("sasl.mechanism", kafkaConfiguration.valueOf("sasl.mechanism"));
+        kafkaProperties.put("max.poll.records", kafkaConfiguration.valueOf("max.poll.records"));
+        kafkaProperties.put("fetch.max.bytes", kafkaConfiguration.valueOf("fetch.max.bytes"));
+        kafkaProperties.put("request.timeout.ms", kafkaConfiguration.valueOf("request.timeout.ms"));
+        kafkaProperties.put("max.poll.interval.ms", kafkaConfiguration.valueOf("max.poll.interval.ms"));
+        kafkaProperties.put("useMockKafkaConsumer", kafkaConfiguration.valueOf("useMockKafkaConsumer"));
         return kafkaProperties;
     }
 
-    @Override
-    public void configureLogging() throws IOException {
+    private void configureLogging() throws IOException {
         // Just for loggers to work
         Path log4j2Config = Paths
                 .get(properties.getProperty("log4j2.configurationFile", System.getProperty("user.dir") + "/rpm/resources/log4j2.properties"));
