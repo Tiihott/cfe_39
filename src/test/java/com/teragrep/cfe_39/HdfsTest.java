@@ -80,15 +80,19 @@ public class HdfsTest {
             // Set system properties to use the valid configuration.
             System
                     .setProperty("cfe_39.config.location", System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
-            config = new ConfigurationImpl().loadPropertiesFile();
+            config = new ConfigurationImpl();
+            config
+                    .loadPropertiesFile(
+                            System
+                                    .getProperty(
+                                            "cfe_39.config.location", "/opt/teragrep/cfe_39/etc/application.properties"
+                                    )
+                    );
             // Create a HDFS miniCluster
             baseDir = Files.createTempDirectory("test_hdfs").toFile().getAbsoluteFile();
             hdfsCluster = new TestMiniClusterFactory().create(config, baseDir);
-            config = config.with("hdfsuri", "hdfs://localhost:" + hdfsCluster.getNameNodePort() + "/");
-            config = config.with("queueDirectory", System.getProperty("user.dir") + "/etc/AVRO/");
-            config = config
-                    .with("log4j2.configurationFile", System.getProperty("user.dir") + "/rpm/resources/log4j2.properties");
-            config.configureLogging();
+            config.with("hdfsuri", "hdfs://localhost:" + hdfsCluster.getNameNodePort() + "/");
+            config.with("queueDirectory", System.getProperty("user.dir") + "/etc/AVRO/");
             fs = new TestFileSystemFactory().create(config.valueOf("hdfsuri"));
         });
     }

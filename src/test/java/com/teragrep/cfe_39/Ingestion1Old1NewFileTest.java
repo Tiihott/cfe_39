@@ -86,16 +86,21 @@ public class Ingestion1Old1NewFileTest {
             // Set system properties to use the valid configuration.
             System
                     .setProperty("cfe_39.config.location", System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
-            config = new ConfigurationImpl().loadPropertiesFile();
+            config = new ConfigurationImpl();
+            config
+                    .loadPropertiesFile(
+                            System
+                                    .getProperty(
+                                            "cfe_39.config.location", "/opt/teragrep/cfe_39/etc/application.properties"
+                                    )
+                    );
             // Create a HDFS miniCluster
             baseDir = Files.createTempDirectory("test_hdfs").toFile().getAbsoluteFile();
             hdfsCluster = new TestMiniClusterFactory().create(config, baseDir);
-            config = config.with("hdfsuri", "hdfs://localhost:" + hdfsCluster.getNameNodePort() + "/");
-            config = config.with("maximumFileSize", "30000");
-            config = config.with("queueDirectory", System.getProperty("user.dir") + "/etc/AVRO/");
-            config = config
-                    .with("log4j2.configurationFile", System.getProperty("user.dir") + "/rpm/resources/log4j2.properties");
-            config.configureLogging();
+            config.with("hdfsuri", "hdfs://localhost:" + hdfsCluster.getNameNodePort() + "/");
+            config.with("maximumFileSize", "30000");
+            config.with("queueDirectory", System.getProperty("user.dir") + "/etc/AVRO/");
+            config.with("hadoop.security.authentication", "false");
             fs = new TestFileSystemFactory().create(config.valueOf("hdfsuri"));
 
             // Inserts pre-made avro-files to HDFS where one file has new timestamp and other old, which are normally generated during data ingestion from mock kafka consumer.

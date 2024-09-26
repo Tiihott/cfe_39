@@ -65,7 +65,9 @@ public class ConfigurationTest {
             // Set system properties to use the valid configuration.
             System
                     .setProperty("cfe_39.config.location", System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
-            ConfigurationImpl configuration = new ConfigurationImpl().loadPropertiesFile();
+            ConfigurationImpl configuration = new ConfigurationImpl();
+            configuration
+                    .loadPropertiesFile(System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
             Properties readerKafkaProperties = configuration.toKafkaConsumerProperties();
             // Test extracting useMockKafkaConsumer value from config.
             boolean useMockKafkaConsumer = Boolean
@@ -81,9 +83,11 @@ public class ConfigurationTest {
         System
                 .setProperty("cfe_39.config.location", System.getProperty("user.dir") + "/src/test/resources/broken.application.properties");
         Exception e = Assertions.assertThrows(Exception.class, () -> {
-            ConfigurationImpl configuration = new ConfigurationImpl().loadPropertiesFile();
+            ConfigurationImpl configuration = new ConfigurationImpl();
+            configuration
+                    .loadPropertiesFile(System.getProperty("user.dir") + "/src/test/resources/broken.application.properties");
         });
-        Assertions.assertEquals("Missing required key hdfsuri", e.getMessage());
+        Assertions.assertEquals("Missing required key numOfConsumers", e.getMessage());
     }
 
     @Test
@@ -92,15 +96,23 @@ public class ConfigurationTest {
         System
                 .setProperty("cfe_39.config.location", System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
         assertDoesNotThrow(() -> {
-            ConfigurationImpl configuration1 = new ConfigurationImpl().loadPropertiesFile();
-            ConfigurationImpl configuration2 = new ConfigurationImpl().loadPropertiesFile();
-            ConfigurationImpl configuration3 = new ConfigurationImpl().loadPropertiesFile();
-            ConfigurationImpl configuration4 = new ConfigurationImpl().loadPropertiesFile();
+            ConfigurationImpl configuration1 = new ConfigurationImpl();
+            configuration1
+                    .loadPropertiesFile(System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
+            ConfigurationImpl configuration2 = new ConfigurationImpl();
+            configuration2
+                    .loadPropertiesFile(System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
+            ConfigurationImpl configuration3 = new ConfigurationImpl();
+            configuration3
+                    .loadPropertiesFile(System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
+            ConfigurationImpl configuration4 = new ConfigurationImpl();
+            configuration4
+                    .loadPropertiesFile(System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
             Assertions.assertNotEquals(configuration1, configuration2);
             Assertions.assertNotEquals(configuration1, configuration3);
             Assertions.assertNotEquals(configuration3, configuration4);
-            configuration3 = configuration3.with("hdfsuri", "12345");
-            configuration4 = configuration4.with("hdfsuri", "12345");
+            configuration3.with("hdfsuri", "12345");
+            configuration4.with("hdfsuri", "12345");
             Assertions.assertNotEquals(configuration1, configuration3);
             Assertions.assertNotEquals(configuration3, configuration4);
         });
@@ -112,8 +124,23 @@ public class ConfigurationTest {
         System
                 .setProperty("cfe_39.config.location", System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
         assertDoesNotThrow(() -> {
-            ConfigurationImpl configuration1 = new ConfigurationImpl().loadPropertiesFile();
-            ConfigurationImpl configuration2 = new ConfigurationImpl().loadPropertiesFile().with("hdfsuri", "12345");
+            ConfigurationImpl configuration1 = new ConfigurationImpl();
+            configuration1
+                    .loadPropertiesFile(
+                            System
+                                    .getProperty(
+                                            "cfe_39.config.location", "/opt/teragrep/cfe_39/etc/application.properties"
+                                    )
+                    );
+            ConfigurationImpl configuration2 = new ConfigurationImpl();
+            configuration2
+                    .loadPropertiesFile(
+                            System
+                                    .getProperty(
+                                            "cfe_39.config.location", "/opt/teragrep/cfe_39/etc/application.properties"
+                                    )
+                    );
+            configuration2.with("hdfsuri", "12345");
             Assertions.assertEquals(configuration1.valueOf("hdfsuri"), "hdfs://localhost:45937/");
             Assertions.assertEquals(configuration2.valueOf("hdfsuri"), "12345");
         });
@@ -124,12 +151,18 @@ public class ConfigurationTest {
         // Set system properties to use the valid configuration.
         System
                 .setProperty("cfe_39.config.location", System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
-        Exception e = Assertions.assertThrows(IllegalStateException.class, () -> {
-            ConfigurationImpl configuration = new ConfigurationImpl()
-                    .loadPropertiesFile()
-                    .with("unauthorized_key", "12345");
+        Exception e = Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            ConfigurationImpl configuration = new ConfigurationImpl();
+            configuration
+                    .loadPropertiesFile(
+                            System
+                                    .getProperty(
+                                            "cfe_39.config.location", "/opt/teragrep/cfe_39/etc/application.properties"
+                                    )
+                    );
+            configuration.with("unauthorized_key", "12345");
         });
-        Assertions.assertEquals("Unauthorized key unauthorized_key", e.getMessage());
+        Assertions.assertEquals("Key not found: unauthorized_key", e.getMessage());
     }
 
     @Test
@@ -138,7 +171,15 @@ public class ConfigurationTest {
         System
                 .setProperty("cfe_39.config.location", System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
         Exception e = Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            ConfigurationImpl configuration = new ConfigurationImpl().loadPropertiesFile().with("maximumFileSize", "0");
+            ConfigurationImpl configuration = new ConfigurationImpl();
+            configuration
+                    .loadPropertiesFile(
+                            System
+                                    .getProperty(
+                                            "cfe_39.config.location", "/opt/teragrep/cfe_39/etc/application.properties"
+                                    )
+                    );
+            configuration.with("maximumFileSize", "0");
         });
         Assertions.assertEquals("maximumFileSize must be set to >0, got 0", e.getMessage());
     }
