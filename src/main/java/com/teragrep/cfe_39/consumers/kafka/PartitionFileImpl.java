@@ -48,7 +48,7 @@ package com.teragrep.cfe_39.consumers.kafka;
 import com.google.gson.JsonObject;
 import com.teragrep.cfe_39.avro.SyslogRecord;
 import com.teragrep.cfe_39.configuration.ConfigurationImpl;
-import com.teragrep.cfe_39.consumers.kafka.queue.WritableQueue;
+import com.teragrep.cfe_39.consumers.kafka.queue.UniqueFileCreated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,11 +68,11 @@ public final class PartitionFileImpl implements PartitionFile {
     private final PartitionRecordsImpl partitionRecords;
 
     PartitionFileImpl(ConfigurationImpl config, JsonObject topicPartition) throws IOException {
-        WritableQueue writableQueue = new WritableQueue(
+        UniqueFileCreated uniqueFileCreated = new UniqueFileCreated(
                 config.valueOf("queueDirectory"),
                 topicPartition.get("topic").getAsString() + topicPartition.get("partition").getAsString()
         );
-        this.syslogFile = writableQueue.getNextWritableFile();
+        this.syslogFile = uniqueFileCreated.getNextWritableFile();
         this.config = config;
         this.topicPartition = topicPartition;
         this.batchOffsets = new ArrayList<>();
