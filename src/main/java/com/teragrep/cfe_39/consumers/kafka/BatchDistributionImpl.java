@@ -51,6 +51,7 @@ import com.teragrep.cfe_39.metrics.topic.TopicCounter;
 import com.teragrep.cfe_39.metrics.DurationStatistics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.codahale.metrics.Timer;
 
 import java.io.*;
 import java.time.Instant;
@@ -101,8 +102,8 @@ public final class BatchDistributionImpl implements BatchDistribution {
                     );
         }
         long batchBytes = 0L;
-        long start = Instant.now().toEpochMilli();
-        // Starts measuring performance here. Measures how long it takes to process the whole batch.
+        Timer timer = new Timer();
+        Timer.Context context = timer.time();
 
         // Distribute the records of the batch to a PartitionFileImpl object based on partition from which the record originates from.
         ListIterator<KafkaRecordImpl> recordOffsetListIterator = batch.listIterator();
@@ -138,9 +139,8 @@ public final class BatchDistributionImpl implements BatchDistribution {
             }
         });
 
-        // Measures performance of code that is between start and end.
-        long end = Instant.now().toEpochMilli();
-        long took = (end - start);
+        // Measure performance.
+        long took = context.stop() / 1000000L; // Convert nanoseconds to milliseconds.
         topicCounter.setDatabaseLatency(took);
         if (took == 0) {
             took = 1;
