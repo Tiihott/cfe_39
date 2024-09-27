@@ -79,16 +79,26 @@ public final class HdfsDataIngestion {
 
     public HdfsDataIngestion(ConfigurationImpl config) throws IOException {
         this.config = config;
-        Properties readerKafkaProperties = config.toKafkaConsumerProperties();
         this.numOfConsumers = Integer.parseInt(config.valueOf("numOfConsumers"));
-        this.useMockKafkaConsumer = Boolean
-                .parseBoolean(readerKafkaProperties.getProperty("useMockKafkaConsumer", "false"));
+        this.useMockKafkaConsumer = Boolean.parseBoolean(config.valueOf("useMockKafkaConsumer"));
         if (useMockKafkaConsumer) {
             this.kafkaConsumer = MockKafkaConsumerFactory.getConsumer(0); // A consumer used only for scanning the available topics to be allocated to consumers running in different threads (thus 0 as input parameter).
         }
         else {
+            Properties kafkaProperties = new Properties();
+            kafkaProperties.put("bootstrap.servers", config.valueOf("bootstrap.servers"));
+            kafkaProperties.put("auto.offset.reset", config.valueOf("auto.offset.reset"));
+            kafkaProperties.put("enable.auto.commit", config.valueOf("enable.auto.commit"));
+            kafkaProperties.put("group.id", config.valueOf("group.id"));
+            kafkaProperties.put("security.protocol", config.valueOf("security.protocol"));
+            kafkaProperties.put("sasl.mechanism", config.valueOf("sasl.mechanism"));
+            kafkaProperties.put("max.poll.records", config.valueOf("max.poll.records"));
+            kafkaProperties.put("fetch.max.bytes", config.valueOf("fetch.max.bytes"));
+            kafkaProperties.put("request.timeout.ms", config.valueOf("request.timeout.ms"));
+            kafkaProperties.put("max.poll.interval.ms", config.valueOf("max.poll.interval.ms"));
+            kafkaProperties.put("useMockKafkaConsumer", config.valueOf("useMockKafkaConsumer"));
             this.kafkaConsumer = new KafkaConsumer<>(
-                    config.toKafkaConsumerProperties(),
+                    kafkaProperties,
                     new ByteArrayDeserializer(),
                     new ByteArrayDeserializer()
             );

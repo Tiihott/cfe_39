@@ -51,8 +51,6 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Properties;
-
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 public class ConfigurationTest {
@@ -68,10 +66,8 @@ public class ConfigurationTest {
             ConfigurationImpl configuration = new ConfigurationImpl();
             configuration
                     .loadPropertiesFile(System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
-            Properties readerKafkaProperties = configuration.toKafkaConsumerProperties();
             // Test extracting useMockKafkaConsumer value from config.
-            boolean useMockKafkaConsumer = Boolean
-                    .parseBoolean(readerKafkaProperties.getProperty("useMockKafkaConsumer", "false"));
+            boolean useMockKafkaConsumer = Boolean.parseBoolean(configuration.valueOf("useMockKafkaConsumer"));
             Assertions.assertTrue(useMockKafkaConsumer);
             LOGGER.debug("useMockKafkaConsumer: {}", useMockKafkaConsumer);
         });

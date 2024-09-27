@@ -141,11 +141,22 @@ public final class ReadCoordinator implements Runnable {
     // Part or Runnable implementation, called when the thread is started.
     @Override
     public void run() {
-        boolean useMockKafkaConsumer = Boolean
-                .parseBoolean(config.toKafkaConsumerProperties().getProperty("useMockKafkaConsumer", "false"));
+        boolean useMockKafkaConsumer = Boolean.parseBoolean(config.valueOf("useMockKafkaConsumer"));
+        Properties kafkaProperties = new Properties();
+        kafkaProperties.put("bootstrap.servers", config.valueOf("bootstrap.servers"));
+        kafkaProperties.put("auto.offset.reset", config.valueOf("auto.offset.reset"));
+        kafkaProperties.put("enable.auto.commit", config.valueOf("enable.auto.commit"));
+        kafkaProperties.put("group.id", config.valueOf("group.id"));
+        kafkaProperties.put("security.protocol", config.valueOf("security.protocol"));
+        kafkaProperties.put("sasl.mechanism", config.valueOf("sasl.mechanism"));
+        kafkaProperties.put("max.poll.records", config.valueOf("max.poll.records"));
+        kafkaProperties.put("fetch.max.bytes", config.valueOf("fetch.max.bytes"));
+        kafkaProperties.put("request.timeout.ms", config.valueOf("request.timeout.ms"));
+        kafkaProperties.put("max.poll.interval.ms", config.valueOf("max.poll.interval.ms"));
+        kafkaProperties.put("useMockKafkaConsumer", config.valueOf("useMockKafkaConsumer"));
         try (
                 KafkaReader kafkaReader = createKafkaReader(
-                        config.toKafkaConsumerProperties(), queueTopic, callbackFunction, useMockKafkaConsumer
+                        kafkaProperties, queueTopic, callbackFunction, useMockKafkaConsumer
                 )
         ) {
             while (true) {

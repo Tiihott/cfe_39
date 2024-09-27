@@ -63,14 +63,13 @@ public final class ConfigurationImpl implements Configuration {
 
     private final Properties properties;
     private final ConfigurationValidationImpl configurationValidationImpl;
-    private final HdfsConfiguration hdfsConfiguration;
-    private final KafkaConfiguration kafkaConfiguration;
+    private final Configuration hdfsConfiguration;
+    private final Configuration kafkaConfiguration;
 
     public ConfigurationImpl() {
         this(new Properties(), new HdfsConfiguration(), new KafkaConfiguration());
     }
 
-    // This approach should be fine. The passed properties can be used for sourcing the other properties files.
     public ConfigurationImpl(
             Properties properties,
             HdfsConfiguration hdfsConfiguration,
@@ -135,22 +134,6 @@ public final class ConfigurationImpl implements Configuration {
     @Override
     public boolean has(String key) {
         return properties.containsKey(key);
-    }
-
-    public Properties toKafkaConsumerProperties() {
-        Properties kafkaProperties = new Properties();
-        kafkaProperties.put("bootstrap.servers", kafkaConfiguration.valueOf("bootstrap.servers"));
-        kafkaProperties.put("auto.offset.reset", kafkaConfiguration.valueOf("auto.offset.reset"));
-        kafkaProperties.put("enable.auto.commit", kafkaConfiguration.valueOf("enable.auto.commit"));
-        kafkaProperties.put("group.id", kafkaConfiguration.valueOf("group.id"));
-        kafkaProperties.put("security.protocol", kafkaConfiguration.valueOf("security.protocol"));
-        kafkaProperties.put("sasl.mechanism", kafkaConfiguration.valueOf("sasl.mechanism"));
-        kafkaProperties.put("max.poll.records", kafkaConfiguration.valueOf("max.poll.records"));
-        kafkaProperties.put("fetch.max.bytes", kafkaConfiguration.valueOf("fetch.max.bytes"));
-        kafkaProperties.put("request.timeout.ms", kafkaConfiguration.valueOf("request.timeout.ms"));
-        kafkaProperties.put("max.poll.interval.ms", kafkaConfiguration.valueOf("max.poll.interval.ms"));
-        kafkaProperties.put("useMockKafkaConsumer", kafkaConfiguration.valueOf("useMockKafkaConsumer"));
-        return kafkaProperties;
     }
 
     private void configureLogging() throws IOException {
