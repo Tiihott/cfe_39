@@ -67,8 +67,8 @@ public class KafkaConfiguration implements Configuration {
     }
 
     @Override
-    public void loadPropertiesFile(String configurationFile) throws IOException {
-        Path configPath = Paths.get(configurationFile);
+    public void load(String configurationPath) throws IOException {
+        Path configPath = Paths.get(configurationPath);
         LOGGER.info("Loading hdfs config <[{}]>", configPath.toAbsolutePath());
         try (InputStream inputStream = Files.newInputStream(configPath)) {
             properties.load(inputStream);

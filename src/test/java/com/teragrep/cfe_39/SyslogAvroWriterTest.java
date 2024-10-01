@@ -76,12 +76,7 @@ public class SyslogAvroWriterTest {
                     .setProperty("cfe_39.config.location", System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
             config = new ConfigurationImpl();
             config
-                    .loadPropertiesFile(
-                            System
-                                    .getProperty(
-                                            "cfe_39.config.location", "/opt/teragrep/cfe_39/etc/application.properties"
-                                    )
-                    );
+                    .load(System.getProperty("cfe_39.config.location", "/opt/teragrep/cfe_39/etc/application.properties"));
             config.with("queueDirectory", System.getProperty("user.dir") + "/etc/AVRO/");
             config.with("hadoop.security.authentication", "false");
         });

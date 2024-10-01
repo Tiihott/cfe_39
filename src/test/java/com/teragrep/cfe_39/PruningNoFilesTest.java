@@ -80,12 +80,7 @@ public class PruningNoFilesTest {
                     .setProperty("cfe_39.config.location", System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
             config = new ConfigurationImpl();
             config
-                    .loadPropertiesFile(
-                            System
-                                    .getProperty(
-                                            "cfe_39.config.location", "/opt/teragrep/cfe_39/etc/application.properties"
-                                    )
-                    );
+                    .load(System.getProperty("cfe_39.config.location", "/opt/teragrep/cfe_39/etc/application.properties"));
             // Create a HDFS miniCluster
             baseDir = Files.createTempDirectory("test_hdfs").toFile().getAbsoluteFile();
             hdfsCluster = new TestMiniClusterFactory().create(config, baseDir);

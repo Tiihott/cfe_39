@@ -49,7 +49,7 @@ import java.io.IOException;
 
 public interface Configuration {
 
-    void loadPropertiesFile(String configurationFile) throws IOException;
+    void load(String configurationPath) throws IOException;
 
     void with(String key, String value);
 

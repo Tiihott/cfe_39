@@ -60,12 +60,7 @@ public final class Main {
         ConfigurationImpl config = new ConfigurationImpl();
         try {
             config
-                    .loadPropertiesFile(
-                            System
-                                    .getProperty(
-                                            "cfe_39.config.location", "/opt/teragrep/cfe_39/etc/application.properties"
-                                    )
-                    );
+                    .load(System.getProperty("cfe_39.config.location", "/opt/teragrep/cfe_39/etc/application.properties"));
         }
         catch (IOException e) {
             LOGGER.error("Can't load config: ", e);

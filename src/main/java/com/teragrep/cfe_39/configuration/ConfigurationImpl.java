@@ -56,7 +56,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
-// This class will only hold the common configuration parameters. Rename to CommonConfiguration?
+// This class will only hold the common configuration parameters.
 public final class ConfigurationImpl implements Configuration {
 
     private final Logger LOGGER = LoggerFactory.getLogger(ConfigurationImpl.class);
@@ -83,8 +83,8 @@ public final class ConfigurationImpl implements Configuration {
 
     // This method should load the common properties belonging to this configuration object, but it should also ask the other configuration objects to do the same.
     @Override
-    public void loadPropertiesFile(String configurationFile) throws IOException {
-        Path configPath = Paths.get(configurationFile);
+    public void load(String configurationPath) throws IOException {
+        Path configPath = Paths.get(configurationPath);
         LOGGER.info("Loading application config <[{}]>", configPath.toAbsolutePath());
         try (InputStream inputStream = Files.newInputStream(configPath)) {
             properties.load(inputStream);
@@ -93,9 +93,9 @@ public final class ConfigurationImpl implements Configuration {
         }
         // also load the hdfs and kafka configuration files.
         hdfsConfiguration
-                .loadPropertiesFile(properties.getProperty("egress.configurationFile", System.getProperty("user.dir") + "/rpm/resources/egress.properties"));
+                .load(properties.getProperty("egress.configurationFile", System.getProperty("user.dir") + "/rpm/resources/egress.properties"));
         kafkaConfiguration
-                .loadPropertiesFile(properties.getProperty("ingress.configurationFile", System.getProperty("user.dir") + "/rpm/resources/ingress.properties"));
+                .load(properties.getProperty("ingress.configurationFile", System.getProperty("user.dir") + "/rpm/resources/ingress.properties"));
         configureLogging();
     }
 
