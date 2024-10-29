@@ -49,9 +49,9 @@ import com.teragrep.cfe_39.avro.SyslogRecord;
 
 public interface KafkaRecord {
 
-    long size();
+    public abstract long size();
 
-    String offsetToJSON();
+    public abstract String offsetToJSON();
 
-    SyslogRecord toSyslogRecord();
+    public abstract SyslogRecord toSyslogRecord();
 }

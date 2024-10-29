@@ -49,12 +49,12 @@ import java.io.IOException;
 
 public interface PartitionFile {
 
-    void addRecord(KafkaRecordImpl kafkaRecord);
+    public abstract void addRecord(KafkaRecordImpl kafkaRecord);
 
-    void commitRecords() throws IOException;
+    public abstract void commitRecords() throws IOException;
 
-    void writeToHdfsEarly() throws IOException;
+    public abstract void writeToHdfsEarly() throws IOException;
 
-    void delete();
+    public abstract void delete();
 
 }

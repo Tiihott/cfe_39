@@ -49,12 +49,12 @@ import java.io.IOException;
 
 public interface Configuration {
 
-    void load(String configurationPath) throws IOException;
+    public abstract void load(String configurationPath) throws IOException;
 
-    void with(String key, String value);
+    public abstract void with(String key, String value);
 
-    String valueOf(String key);
+    public abstract String valueOf(String key);
 
-    boolean has(String key);
+    public abstract boolean has(String key);
 
 }

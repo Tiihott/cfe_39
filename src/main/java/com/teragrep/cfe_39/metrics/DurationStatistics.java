@@ -55,8 +55,8 @@ import java.time.Instant;
 
 public class DurationStatistics {
 
-    MetricRegistry metricRegistry = new MetricRegistry();
-    private static final Logger LOGGER = LoggerFactory.getLogger(DurationStatistics.class);
+    private final MetricRegistry metricRegistry = new MetricRegistry();
+    private final Logger LOGGER = LoggerFactory.getLogger(DurationStatistics.class);
     private Instant lastReportTime = Instant.now();
     private long lastBytes = 0L;
     private long lastRecords = 0L;

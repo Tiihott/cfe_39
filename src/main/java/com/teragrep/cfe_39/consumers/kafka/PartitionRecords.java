@@ -51,8 +51,8 @@ import java.util.List;
 
 public interface PartitionRecords {
 
-    void addRecord(KafkaRecordImpl kafkaRecord);
+    public abstract void addRecord(KafkaRecordImpl kafkaRecord);
 
-    List<SyslogRecord> toSyslogRecordList();
+    public abstract List<SyslogRecord> toSyslogRecordList();
 
 }

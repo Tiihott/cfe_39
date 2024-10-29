@@ -82,7 +82,7 @@ public final class HdfsDataIngestion {
         this.numOfConsumers = Integer.parseInt(config.valueOf("numOfConsumers"));
         this.useMockKafkaConsumer = Boolean.parseBoolean(config.valueOf("useMockKafkaConsumer"));
         if (useMockKafkaConsumer) {
-            this.kafkaConsumer = MockKafkaConsumerFactory.getConsumer(0); // A consumer used only for scanning the available topics to be allocated to consumers running in different threads (thus 0 as input parameter).
+            this.kafkaConsumer = new MockKafkaConsumerFactory(0).getConsumer(); // A consumer used only for scanning the available topics to be allocated to consumers running in different threads (thus 0 as input parameter).
         }
         else {
             Properties kafkaProperties = new Properties();

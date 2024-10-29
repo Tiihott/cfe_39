@@ -78,7 +78,7 @@ public final class PartitionFileImpl implements PartitionFile {
         this.batchOffsets = new ArrayList<>();
         this.partitionRecords = new PartitionRecordsImpl(config);
         try (SyslogAvroWriter syslogAvroWriter = new SyslogAvroWriter(syslogFile)) {
-            // Initializes the syslogFile.
+            syslogAvroWriter.close();
         }
         if (LOGGER.isDebugEnabled()) {
             LOGGER
@@ -162,7 +162,7 @@ public final class PartitionFileImpl implements PartitionFile {
         }
         syslogFile.delete(); // Delete the file as all the contents have been stored to HDFS.
         try (SyslogAvroWriter syslogAvroWriter = new SyslogAvroWriter(syslogFile)) {
-            // NoOp, syslogAvroWriter has initialized the empty AVRO-file.
+            syslogAvroWriter.close();
         }
         batchOffsets.clear();
         if (LOGGER.isDebugEnabled()) {

@@ -49,6 +49,6 @@ import java.util.Properties;
 
 public interface ConfigurationValidation {
 
-    void validate(Properties properties);
+    public abstract void validate(Properties properties);
 
 }

@@ -98,8 +98,8 @@ public final class HDFSWrite implements AutoCloseable {
             LOGGER.debug("Target file <{}> doesn't exist, proceeding normally.", hdfswritepath);
         }
 
-        Path path = new Path(syslogFile.getPath());
-        fs.copyFromLocalFile(path, hdfswritepath);
+        Path filePath = new Path(syslogFile.getPath());
+        fs.copyFromLocalFile(filePath, hdfswritepath);
         LOGGER.debug("End Write file into hdfs");
         LOGGER.info("\nFile committed to HDFS, file writepath should be: <{}>\n", hdfswritepath);
     }

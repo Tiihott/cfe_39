@@ -50,5 +50,5 @@ import java.util.function.Consumer;
 
 public interface BatchDistribution extends Consumer<List<KafkaRecordImpl>> {
 
-    void rebalance();
+    public abstract void rebalance();
 }

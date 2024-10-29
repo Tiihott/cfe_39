@@ -109,9 +109,9 @@ public class UniqueFileCreated {
         }
     }
 
-    private BiPredicate<Path, BasicFileAttributes> getFileMatcher(String queueNamePrefix) {
+    private BiPredicate<Path, BasicFileAttributes> getFileMatcher(String queueNamePrefixInput) {
         return (path, basicFileAttributes) -> {
-            if (!path.getFileName().toString().startsWith(queueNamePrefix)) {
+            if (!path.getFileName().toString().startsWith(queueNamePrefixInput)) {
                 return false;
             }
             else if (path.getFileName().toString().endsWith(".state")) {
