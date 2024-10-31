@@ -97,8 +97,8 @@ public final class BatchDistributionImpl implements BatchDistribution {
         if (LOGGER.isDebugEnabled()) {
             LOGGER
                     .debug(
-                            "Fuura searching your batch for <[{}]> with records <{}> and took  <{}> milliseconds. <{}> EPS. ",
-                            topic, batch.size(), (ftook), (batch.size() * 1000L / ftook)
+                            "Searching batch for <[{}]> with <{}> records took <{}> milliseconds. <{}> EPS. ", topic,
+                            batch.size(), (ftook), (batch.size() * 1000L / ftook)
                     );
         }
         long batchBytes = 0L;
