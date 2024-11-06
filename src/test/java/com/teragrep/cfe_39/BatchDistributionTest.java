@@ -112,11 +112,6 @@ public class BatchDistributionTest {
         });
         hdfsCluster.shutdown();
         FileUtil.fullyDelete(baseDir);
-        File queueDirectory = new File(config.valueOf("queueDirectory"));
-        File[] files = queueDirectory.listFiles();
-        if (files[0].getName().equals("topicName0.1")) {
-            files[0].delete();
-        }
     }
 
     @Test

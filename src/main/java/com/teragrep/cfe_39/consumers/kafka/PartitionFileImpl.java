@@ -77,13 +77,10 @@ public final class PartitionFileImpl implements PartitionFile {
         this.topicPartition = topicPartition;
         this.batchOffsets = new ArrayList<>();
         this.partitionRecords = new PartitionRecordsImpl(config);
-        try (SyslogAvroWriter syslogAvroWriter = new SyslogAvroWriter(syslogFile)) {
-            syslogAvroWriter.close();
-        }
         if (LOGGER.isDebugEnabled()) {
             LOGGER
                     .debug(
-                            "PartitionFileImpl representing topic {} partition {} initialized successfully. syslogFile allocated to the object is located at {}",
+                            "PartitionFileImpl representing topic {} partition {} initialized successfully. syslogFile path allocated to the object is {}",
                             topicPartition.get("topic").getAsString(), topicPartition.get("partition").getAsString(), syslogFile.getPath()
                     );
         }
@@ -161,14 +158,11 @@ public final class PartitionFileImpl implements PartitionFile {
             writer.commit(syslogFile); // commits the final AVRO-file to HDFS.
         }
         syslogFile.delete(); // Delete the file as all the contents have been stored to HDFS.
-        try (SyslogAvroWriter syslogAvroWriter = new SyslogAvroWriter(syslogFile)) {
-            syslogAvroWriter.close();
-        }
         batchOffsets.clear();
         if (LOGGER.isDebugEnabled()) {
             LOGGER
                     .debug(
-                            "SyslogFile representing topic {} partition {} stored to HDFS with offset value of {}. SyslogFile allocated to the object is located at {}",
+                            "SyslogFile representing topic {} partition {} stored to HDFS with offset value of {}. SyslogFile allocated to the object located at {} has been deleted to prepare for storing new records.",
                             topicPartition.get("topic").getAsString(), topicPartition.get("partition").getAsString(), offset, syslogFile.getPath()
                     );
         }

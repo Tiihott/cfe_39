@@ -170,12 +170,7 @@ public class Ingestion2NewFilesTest {
             // Assert the avro-files that were too small to be stored in HDFS.
             String path1 = config.valueOf("queueDirectory") + "/" + "testConsumerTopic0.1";
             File avroFile1 = new File(path1);
-            Assertions.assertTrue(avroFile1.exists());
-            DatumReader<SyslogRecord> datumReader1 = new SpecificDatumReader<>(SyslogRecord.class);
-            DataFileReader<SyslogRecord> reader1 = new DataFileReader<>(avroFile1, datumReader1);
-            Assertions.assertFalse(reader1.hasNext()); // Partition 0 avro-file should be empty.
-            reader1.close();
-            avroFile1.delete();
+            Assertions.assertFalse(avroFile1.exists()); // Partition 0 avro-file shouldn't exist because there are no records left in the buffer.
 
             List<String> filenameList = new ArrayList<>();
             for (int partition = 1; partition <= 9; partition++) {

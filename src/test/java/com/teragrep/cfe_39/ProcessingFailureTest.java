@@ -45,15 +45,11 @@
  */
 package com.teragrep.cfe_39;
 
-import com.teragrep.cfe_39.avro.SyslogRecord;
 import com.teragrep.cfe_39.configuration.ConfigurationImpl;
 import com.teragrep.cfe_39.consumers.kafka.BatchDistributionImpl;
 import com.teragrep.cfe_39.consumers.kafka.KafkaRecordImpl;
 import com.teragrep.cfe_39.metrics.DurationStatistics;
 import com.teragrep.cfe_39.metrics.topic.TopicCounter;
-import org.apache.avro.file.DataFileReader;
-import org.apache.avro.io.DatumReader;
-import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
@@ -158,15 +154,7 @@ public class ProcessingFailureTest {
             // Assert the local avro file that should e empty.
             File queueDirectory = new File(config.valueOf("queueDirectory"));
             File[] files = queueDirectory.listFiles();
-            Assertions.assertEquals(1, files.length);
-            String path2 = config.valueOf("queueDirectory") + "/" + "topicName0.1";
-            File avroFile = new File(path2);
-            Assertions.assertTrue(avroFile.exists());
-            DatumReader<SyslogRecord> datumReader = new SpecificDatumReader<>(SyslogRecord.class);
-            DataFileReader<SyslogRecord> reader = new DataFileReader<>(avroFile, datumReader);
-            Assertions.assertFalse(reader.hasNext());
-            reader.close();
-            avroFile.delete();
+            Assertions.assertEquals(0, files.length); // Partition 0 avro-file shouldn't exist because there are no records left in the buffer.
         });
 
     }
@@ -214,15 +202,7 @@ public class ProcessingFailureTest {
             // Assert the local avro file that should e empty.
             File queueDirectory = new File(config.valueOf("queueDirectory"));
             File[] files = queueDirectory.listFiles();
-            Assertions.assertEquals(1, files.length);
-            String path2 = config.valueOf("queueDirectory") + "/" + "topicName0.1";
-            File avroFile = new File(path2);
-            Assertions.assertTrue(avroFile.exists());
-            DatumReader<SyslogRecord> datumReader = new SpecificDatumReader<>(SyslogRecord.class);
-            DataFileReader<SyslogRecord> reader = new DataFileReader<>(avroFile, datumReader);
-            Assertions.assertFalse(reader.hasNext());
-            reader.close();
-            avroFile.delete();
+            Assertions.assertEquals(0, files.length); // Partition 0 avro-file shouldn't exist because there are no records left in the buffer.
         });
 
     }
