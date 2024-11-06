@@ -135,6 +135,10 @@ public final class BatchDistributionImpl implements BatchDistribution {
             }
             catch (IOException e) {
                 LOGGER.error("Failed to write the SyslogRecords to PartitionFileImpl <{}> in topic <{}>", key, topic);
+                // Cleanup resources
+                partitionFileMap.forEach((cleanupKey, cleanupValue) -> {
+                    cleanupValue.delete();
+                });
                 throw new RuntimeException(e);
             }
         });
