@@ -46,8 +46,8 @@
 package com.teragrep.cfe_39;
 
 import com.teragrep.cfe_39.avro.SyslogRecord;
-import com.teragrep.cfe_39.configuration.NewCommonConfiguration;
-import com.teragrep.cfe_39.configuration.NewHdfsConfiguration;
+import com.teragrep.cfe_39.configuration.CommonConfiguration;
+import com.teragrep.cfe_39.configuration.HdfsConfiguration;
 import com.teragrep.cfe_39.consumers.kafka.BatchDistributionImpl;
 import com.teragrep.cfe_39.consumers.kafka.KafkaRecordImpl;
 import com.teragrep.cfe_39.metrics.DurationStatistics;
@@ -85,8 +85,8 @@ public class BatchDistributionTest {
 
     private static MiniDFSCluster hdfsCluster;
     private static File baseDir;
-    private static NewCommonConfiguration config;
-    private static NewHdfsConfiguration hdfsConfig;
+    private static CommonConfiguration config;
+    private static HdfsConfiguration hdfsConfig;
     private FileSystem fs;
 
     // Prepares known state for testing.
@@ -105,7 +105,7 @@ public class BatchDistributionTest {
             map.put("skipEmptyRFC5424Records", "true");
             map.put("pruneOffset", "157784760000");
             map.put("consumerTimeout", "600000");
-            config = new NewCommonConfiguration(map);
+            config = new CommonConfiguration(map);
 
             // Create a HDFS miniCluster
             baseDir = Files.createTempDirectory("test_hdfs").toFile().getAbsoluteFile();
@@ -125,7 +125,7 @@ public class BatchDistributionTest {
             hdfsMap.put("hadoop.kerberos.keytab.login.autorenewal.enabled", "true");
             hdfsMap.put("dfs.data.transfer.protection", "test");
             hdfsMap.put("dfs.encrypt.data.transfer.cipher.suites", "test");
-            hdfsConfig = new NewHdfsConfiguration(hdfsMap);
+            hdfsConfig = new HdfsConfiguration(hdfsMap);
             fs = new TestFileSystemFactory().create(hdfsConfig.hdfsUri());
         });
     }

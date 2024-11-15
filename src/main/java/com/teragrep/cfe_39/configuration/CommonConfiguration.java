@@ -51,13 +51,13 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
-public final class NewCommonConfiguration {
+public final class CommonConfiguration {
 
-    private final Logger LOGGER = LoggerFactory.getLogger(NewCommonConfiguration.class);
+    private final Logger LOGGER = LoggerFactory.getLogger(CommonConfiguration.class);
 
     private final Map<String, String> config;
 
-    public NewCommonConfiguration(Map<String, String> map) {
+    public CommonConfiguration(Map<String, String> map) {
         this.config = map;
     }
 

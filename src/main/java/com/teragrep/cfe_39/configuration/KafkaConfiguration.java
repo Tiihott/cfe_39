@@ -51,13 +51,13 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
-public final class NewKafkaConfiguration {
+public final class KafkaConfiguration {
 
-    private final Logger LOGGER = LoggerFactory.getLogger(NewKafkaConfiguration.class);
+    private final Logger LOGGER = LoggerFactory.getLogger(KafkaConfiguration.class);
 
     private final Map<String, String> config;
 
-    public NewKafkaConfiguration(Map<String, String> config) {
+    public KafkaConfiguration(Map<String, String> config) {
         this.config = config;
     }
 

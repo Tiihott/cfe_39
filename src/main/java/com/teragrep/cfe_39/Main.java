@@ -45,9 +45,9 @@
  */
 package com.teragrep.cfe_39;
 
-import com.teragrep.cfe_39.configuration.NewCommonConfiguration;
-import com.teragrep.cfe_39.configuration.NewHdfsConfiguration;
-import com.teragrep.cfe_39.configuration.NewKafkaConfiguration;
+import com.teragrep.cfe_39.configuration.CommonConfiguration;
+import com.teragrep.cfe_39.configuration.HdfsConfiguration;
+import com.teragrep.cfe_39.configuration.KafkaConfiguration;
 import com.teragrep.cfe_39.consumers.kafka.HdfsDataIngestion;
 import com.teragrep.cnf_01.ConfigurationException;
 import com.teragrep.cnf_01.PathConfiguration;
@@ -64,7 +64,7 @@ public final class Main {
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args) throws Exception {
-        // NewCommonConfiguration
+        // CommonConfiguration
         final PathConfiguration pathConfiguration = new PathConfiguration(
                 System.getProperty("cfe_39.config.location", "/opt/teragrep/cfe_39/etc/application.properties")
         );
@@ -76,14 +76,14 @@ public final class Main {
             LOGGER.error("Failed to create PathConfiguration: <{}>", e.getMessage());
             throw e;
         }
-        NewCommonConfiguration commonConfig = new NewCommonConfiguration(map);
+        CommonConfiguration commonConfig = new CommonConfiguration(map);
 
         // log4j2 configuration
         Path log4j2Config = Paths
                 .get(commonConfig.log4j2ConfigurationFile(), System.getProperty("user.dir") + "/rpm/resources/log4j2.properties");
         Configurator.reconfigure(log4j2Config.toUri());
 
-        // NewKafkaConfiguration
+        // KafkaConfiguration
         final PathConfiguration kafkaPathConfiguration = new PathConfiguration(commonConfig.egressConfigurationFile());
         final Map<String, String> kafkaMap;
         try {
@@ -93,9 +93,9 @@ public final class Main {
             LOGGER.error("Failed to create PathConfiguration: <{}>", e.getMessage());
             throw e;
         }
-        NewKafkaConfiguration kafkaConfig = new NewKafkaConfiguration(kafkaMap);
+        KafkaConfiguration kafkaConfig = new KafkaConfiguration(kafkaMap);
 
-        // NewHdfsConfiguration
+        // HdfsConfiguration
         final PathConfiguration hdfsPathConfiguration = new PathConfiguration(commonConfig.ingressConfigurationFile());
         final Map<String, String> hdfsMap;
         try {
@@ -105,7 +105,7 @@ public final class Main {
             LOGGER.error("Failed to create PathConfiguration: <{}>", e.getMessage());
             throw e;
         }
-        NewHdfsConfiguration hdfsConfig = new NewHdfsConfiguration(hdfsMap);
+        HdfsConfiguration hdfsConfig = new HdfsConfiguration(hdfsMap);
 
         LOGGER.info("Running main program");
         HdfsDataIngestion hdfsDataIngestion = new HdfsDataIngestion(commonConfig, hdfsConfig, kafkaConfig);

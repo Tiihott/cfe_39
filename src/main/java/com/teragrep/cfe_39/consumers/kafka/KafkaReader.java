@@ -45,7 +45,7 @@
  */
 package com.teragrep.cfe_39.consumers.kafka;
 
-import com.teragrep.cfe_39.configuration.NewCommonConfiguration;
+import com.teragrep.cfe_39.configuration.CommonConfiguration;
 import org.apache.kafka.clients.consumer.*;
 
 import org.slf4j.Logger;
@@ -59,7 +59,7 @@ public final class KafkaReader implements AutoCloseable {
 
     private final Logger LOGGER = LoggerFactory.getLogger(KafkaReader.class);
 
-    private final NewCommonConfiguration config;
+    private final CommonConfiguration config;
     private final Consumer<byte[], byte[]> kafkaConsumer;
     private final BatchDistributionImpl callbackFunction;
     private final ConsumerRebalanceListenerImpl consumerRebalanceListenerImpl;
@@ -69,7 +69,7 @@ public final class KafkaReader implements AutoCloseable {
             Consumer<byte[], byte[]> kafkaConsumer,
             BatchDistributionImpl callbackFunction,
             ConsumerRebalanceListenerImpl consumerRebalanceListenerImpl,
-            NewCommonConfiguration config
+            CommonConfiguration config
     ) {
         this.kafkaConsumer = kafkaConsumer;
         this.callbackFunction = callbackFunction;

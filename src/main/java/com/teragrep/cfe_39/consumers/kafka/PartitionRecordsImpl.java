@@ -46,7 +46,7 @@
 package com.teragrep.cfe_39.consumers.kafka;
 
 import com.teragrep.cfe_39.avro.SyslogRecord;
-import com.teragrep.cfe_39.configuration.NewCommonConfiguration;
+import com.teragrep.cfe_39.configuration.CommonConfiguration;
 import com.teragrep.rlo_06.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,9 +59,9 @@ public final class PartitionRecordsImpl implements PartitionRecords {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartitionRecordsImpl.class);
 
     private final List<KafkaRecordImpl> kafkaRecordList;
-    private final NewCommonConfiguration config;
+    private final CommonConfiguration config;
 
-    public PartitionRecordsImpl(NewCommonConfiguration config) {
+    public PartitionRecordsImpl(CommonConfiguration config) {
         this.kafkaRecordList = new ArrayList<>();
         this.config = config;
     }

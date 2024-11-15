@@ -45,7 +45,7 @@
  */
 package com.teragrep.cfe_39;
 
-import com.teragrep.cfe_39.configuration.NewKafkaConfiguration;
+import com.teragrep.cfe_39.configuration.HdfsConfiguration;
 import com.teragrep.cnf_01.PathConfiguration;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -56,39 +56,40 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
-public class NewKafkaConfigurationTest {
+public class HdfsConfigurationTest {
 
-    private final Logger LOGGER = LoggerFactory.getLogger(NewKafkaConfigurationTest.class);
+    private final Logger LOGGER = LoggerFactory.getLogger(HdfsConfigurationTest.class);
 
     @Test
     public void configurationTest() {
         assertDoesNotThrow(() -> {
-            final PathConfiguration kafkaPathConfiguration = new PathConfiguration(
-                    System.getProperty("user.dir") + "/src/test/resources/valid.kafka.properties"
+            final PathConfiguration hdfsPathConfiguration = new PathConfiguration(
+                    System.getProperty("user.dir") + "/src/test/resources/valid.hdfs.properties"
             );
-            final Map<String, String> kafkaMap;
-            kafkaMap = kafkaPathConfiguration.asMap();
+            final Map<String, String> hdfsMap;
+            hdfsMap = hdfsPathConfiguration.asMap();
             Assertions
                     .assertEquals(
-                            "{java.security.auth.login.config=/opt/teragrep/cfe_39/etc/config.jaas, security.protocol=SASL_PLAINTEXT, useMockKafkaConsumer=true, enable.auto.commit=false, max.poll.records=500, request.timeout.ms=300000, sasl.mechanism=PLAIN, group.id=cfe_39, bootstrap.servers=test, fetch.max.bytes=1073741820, max.poll.interval.ms=300000, auto.offset.reset=earliest}",
-                            kafkaMap.toString()
+                            "{pruneOffset=157784760000, hdfsuri=hdfs://localhost:45937/, dfs.namenode.kerberos.principal.pattern=test, hadoop.security.authentication=kerberos, dfs.encrypt.data.transfer.cipher.suites=test, java.security.krb5.kdc=test, KerberosKeytabPath=test, dfs.data.transfer.protection=test, dfs.client.use.datanode.hostname=false, hadoop.kerberos.keytab.login.autorenewal.enabled=true, KerberosKeytabUser=test, java.security.krb5.realm=test, hadoop.security.authorization=test, hdfsPath=hdfs:///opt/teragrep/cfe_39/srv/}",
+                            hdfsMap.toString()
                     );
-            NewKafkaConfiguration kafkaConfig = new NewKafkaConfiguration(kafkaMap);
+            HdfsConfiguration hdfsConfig = new HdfsConfiguration(hdfsMap);
 
             // Assert that printers return correct values.
-            Assertions.assertEquals("/opt/teragrep/cfe_39/etc/config.jaas", kafkaConfig.javaSecurityAuthLoginConfig());
-            Assertions.assertEquals("test", kafkaConfig.bootstrapServers());
-            Assertions.assertEquals("earliest", kafkaConfig.autoOffsetReset());
-            Assertions.assertEquals("false", kafkaConfig.enableAutoCommit());
-            Assertions.assertEquals("cfe_39", kafkaConfig.groupId());
-            Assertions.assertEquals("SASL_PLAINTEXT", kafkaConfig.securityProtocol());
-            Assertions.assertEquals("PLAIN", kafkaConfig.saslMechanism());
-            Assertions.assertEquals(500, kafkaConfig.maxPollRecords());
-            Assertions.assertEquals(1073741820, kafkaConfig.fetchMaxBytes());
-            Assertions.assertEquals(300000, kafkaConfig.requestTimeoutMs());
-            Assertions.assertEquals(300000, kafkaConfig.maxPollIntervalMs());
-            Assertions.assertTrue(kafkaConfig.useMockKafkaConsumer());
-
+            Assertions.assertEquals(157784760000L, hdfsConfig.pruneOffset());
+            Assertions.assertEquals("hdfs://localhost:45937/", hdfsConfig.hdfsUri());
+            Assertions.assertEquals("hdfs:///opt/teragrep/cfe_39/srv/", hdfsConfig.hdfsPath());
+            Assertions.assertEquals("test", hdfsConfig.javaSecurityKrb5Kdc());
+            Assertions.assertEquals("test", hdfsConfig.javaSecurityKrb5Realm());
+            Assertions.assertEquals("kerberos", hdfsConfig.hadoopSecurityAuthentication());
+            Assertions.assertEquals("test", hdfsConfig.hadoopSecurityAuthorization());
+            Assertions.assertEquals("test", hdfsConfig.dfsNamenodeKerberosPrincipalPattern());
+            Assertions.assertEquals("test", hdfsConfig.KerberosKeytabUser());
+            Assertions.assertEquals("test", hdfsConfig.KerberosKeytabPath());
+            Assertions.assertEquals("false", hdfsConfig.dfsClientUseDatanodeHostname());
+            Assertions.assertEquals("true", hdfsConfig.hadoopKerberosKeytabLoginAutorenewalEnabled());
+            Assertions.assertEquals("test", hdfsConfig.dfsDataTransferProtection());
+            Assertions.assertEquals("test", hdfsConfig.dfsEncryptDataTransferCipherSuites());
         });
     }
 }

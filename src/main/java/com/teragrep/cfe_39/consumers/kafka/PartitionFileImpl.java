@@ -47,8 +47,8 @@ package com.teragrep.cfe_39.consumers.kafka;
 
 import com.google.gson.JsonObject;
 import com.teragrep.cfe_39.avro.SyslogRecord;
-import com.teragrep.cfe_39.configuration.NewCommonConfiguration;
-import com.teragrep.cfe_39.configuration.NewHdfsConfiguration;
+import com.teragrep.cfe_39.configuration.CommonConfiguration;
+import com.teragrep.cfe_39.configuration.HdfsConfiguration;
 import com.teragrep.cfe_39.consumers.kafka.queue.UniqueFileCreated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,13 +63,13 @@ public final class PartitionFileImpl implements PartitionFile {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartitionFileImpl.class);
 
     private final JsonObject topicPartition;
-    private final NewCommonConfiguration config;
-    private final NewHdfsConfiguration hdfsConfig;
+    private final CommonConfiguration config;
+    private final HdfsConfiguration hdfsConfig;
     private final File syslogFile;
     private final List<Long> batchOffsets;
     private final PartitionRecordsImpl partitionRecords;
 
-    PartitionFileImpl(NewCommonConfiguration config, NewHdfsConfiguration hdfsConfig, JsonObject topicPartition)
+    PartitionFileImpl(CommonConfiguration config, HdfsConfiguration hdfsConfig, JsonObject topicPartition)
             throws IOException {
         UniqueFileCreated uniqueFileCreated = new UniqueFileCreated(
                 config.queueDirectory(),

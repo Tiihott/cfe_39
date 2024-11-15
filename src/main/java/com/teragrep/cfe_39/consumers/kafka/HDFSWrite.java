@@ -45,7 +45,7 @@
  */
 package com.teragrep.cfe_39.consumers.kafka;
 
-import com.teragrep.cfe_39.configuration.NewHdfsConfiguration;
+import com.teragrep.cfe_39.configuration.HdfsConfiguration;
 import org.apache.hadoop.fs.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,9 +58,9 @@ public final class HDFSWrite implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(HDFSWrite.class);
     private final String fileName;
     private final String path;
-    private final NewHdfsConfiguration configuration;
+    private final HdfsConfiguration configuration;
 
-    public HDFSWrite(NewHdfsConfiguration config, String topic, String partition, long offset) {
+    public HDFSWrite(HdfsConfiguration config, String topic, String partition, long offset) {
         this.configuration = config;
         path = config.hdfsPath() + "/" + topic;
         fileName = partition + "." + offset; // filename should be constructed from partition and offset.

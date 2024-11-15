@@ -46,8 +46,8 @@
 package com.teragrep.cfe_39.consumers.kafka;
 
 import com.google.gson.*;
-import com.teragrep.cfe_39.configuration.NewCommonConfiguration;
-import com.teragrep.cfe_39.configuration.NewHdfsConfiguration;
+import com.teragrep.cfe_39.configuration.CommonConfiguration;
+import com.teragrep.cfe_39.configuration.HdfsConfiguration;
 import com.teragrep.cfe_39.metrics.topic.TopicCounter;
 import com.teragrep.cfe_39.metrics.DurationStatistics;
 import org.slf4j.Logger;
@@ -70,13 +70,13 @@ public final class BatchDistributionImpl implements BatchDistribution {
     private final DurationStatistics durationStatistics;
     private final TopicCounter topicCounter;
     private long lastTimeCalled;
-    private final NewCommonConfiguration config;
-    private final NewHdfsConfiguration hdfsConfig;
+    private final CommonConfiguration config;
+    private final HdfsConfiguration hdfsConfig;
     private final Map<String, PartitionFileImpl> partitionFileMap;
 
     public BatchDistributionImpl(
-            NewCommonConfiguration config,
-            NewHdfsConfiguration hdfsConfig,
+            CommonConfiguration config,
+            HdfsConfiguration hdfsConfig,
             String topic,
             DurationStatistics durationStatistics,
             TopicCounter topicCounter

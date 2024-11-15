@@ -46,9 +46,9 @@
 package com.teragrep.cfe_39;
 
 import com.teragrep.cfe_39.avro.SyslogRecord;
-import com.teragrep.cfe_39.configuration.NewCommonConfiguration;
-import com.teragrep.cfe_39.configuration.NewHdfsConfiguration;
-import com.teragrep.cfe_39.configuration.NewKafkaConfiguration;
+import com.teragrep.cfe_39.configuration.CommonConfiguration;
+import com.teragrep.cfe_39.configuration.HdfsConfiguration;
+import com.teragrep.cfe_39.configuration.KafkaConfiguration;
 import com.teragrep.cfe_39.consumers.kafka.HdfsDataIngestion;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.specific.SpecificDatumReader;
@@ -74,9 +74,9 @@ public class IngestionConsumerTimeoutTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(IngestionConsumerTimeoutTest.class);
     private static MiniDFSCluster hdfsCluster;
     private static File baseDir;
-    private static NewCommonConfiguration config;
-    private static NewHdfsConfiguration hdfsConfig;
-    private static NewKafkaConfiguration kafkaConfig;
+    private static CommonConfiguration config;
+    private static HdfsConfiguration hdfsConfig;
+    private static KafkaConfiguration kafkaConfig;
     private FileSystem fs;
 
     // Prepares known state for testing.
@@ -95,7 +95,7 @@ public class IngestionConsumerTimeoutTest {
             map.put("skipEmptyRFC5424Records", "true");
             map.put("pruneOffset", "157784760000");
             map.put("consumerTimeout", "1000"); // Low consumerTimeout
-            config = new NewCommonConfiguration(map);
+            config = new CommonConfiguration(map);
 
             // Create a HDFS miniCluster
             baseDir = Files.createTempDirectory("test_hdfs").toFile().getAbsoluteFile();
@@ -115,7 +115,7 @@ public class IngestionConsumerTimeoutTest {
             hdfsMap.put("hadoop.kerberos.keytab.login.autorenewal.enabled", "true");
             hdfsMap.put("dfs.data.transfer.protection", "test");
             hdfsMap.put("dfs.encrypt.data.transfer.cipher.suites", "test");
-            hdfsConfig = new NewHdfsConfiguration(hdfsMap);
+            hdfsConfig = new HdfsConfiguration(hdfsMap);
             fs = new TestFileSystemFactory().create(hdfsConfig.hdfsUri());
 
             Map<String, String> kafkaMap = new HashMap<>();
@@ -131,7 +131,7 @@ public class IngestionConsumerTimeoutTest {
             kafkaMap.put("request.timeout.ms", "300000");
             kafkaMap.put("max.poll.interval.ms", "300000");
             kafkaMap.put("useMockKafkaConsumer", "true");
-            kafkaConfig = new NewKafkaConfiguration(kafkaMap);
+            kafkaConfig = new KafkaConfiguration(kafkaMap);
         });
     }
 

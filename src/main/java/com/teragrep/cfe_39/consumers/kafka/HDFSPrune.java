@@ -45,7 +45,7 @@
  */
 package com.teragrep.cfe_39.consumers.kafka;
 
-import com.teragrep.cfe_39.configuration.NewHdfsConfiguration;
+import com.teragrep.cfe_39.configuration.HdfsConfiguration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -61,7 +61,7 @@ public final class HDFSPrune {
     private final Path newDirectoryPath;
     private final long cutOffEpoch;
 
-    public HDFSPrune(NewHdfsConfiguration config, String topicName, FileSystem fs) throws IOException {
+    public HDFSPrune(HdfsConfiguration config, String topicName, FileSystem fs) throws IOException {
         this.fs = fs;
         String path = config.hdfsPath().concat("/").concat(topicName);
         //==== Create directory if not exists

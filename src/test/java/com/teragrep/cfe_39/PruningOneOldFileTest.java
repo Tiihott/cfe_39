@@ -45,7 +45,7 @@
  */
 package com.teragrep.cfe_39;
 
-import com.teragrep.cfe_39.configuration.NewHdfsConfiguration;
+import com.teragrep.cfe_39.configuration.HdfsConfiguration;
 import com.teragrep.cfe_39.consumers.kafka.HDFSPrune;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FileUtil;
@@ -74,7 +74,7 @@ public class PruningOneOldFileTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(PruningOneOldFileTest.class);
     private static MiniDFSCluster hdfsCluster;
     private static File baseDir;
-    private static NewHdfsConfiguration hdfsConfig;
+    private static HdfsConfiguration hdfsConfig;
     private FileSystem fs;
 
     // Prepares known state for testing.
@@ -99,7 +99,7 @@ public class PruningOneOldFileTest {
             hdfsMap.put("hadoop.kerberos.keytab.login.autorenewal.enabled", "true");
             hdfsMap.put("dfs.data.transfer.protection", "test");
             hdfsMap.put("dfs.encrypt.data.transfer.cipher.suites", "test");
-            hdfsConfig = new NewHdfsConfiguration(hdfsMap);
+            hdfsConfig = new HdfsConfiguration(hdfsMap);
             fs = new TestFileSystemFactory().create(hdfsConfig.hdfsUri());
 
             // Inserts a single pre-made avro-file with an olf timestamp to HDFS, which is normally generated during data ingestion from mock kafka consumer.

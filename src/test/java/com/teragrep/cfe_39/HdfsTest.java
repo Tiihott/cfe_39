@@ -47,8 +47,8 @@ package com.teragrep.cfe_39;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.teragrep.cfe_39.configuration.NewCommonConfiguration;
-import com.teragrep.cfe_39.configuration.NewHdfsConfiguration;
+import com.teragrep.cfe_39.configuration.CommonConfiguration;
+import com.teragrep.cfe_39.configuration.HdfsConfiguration;
 import com.teragrep.cfe_39.consumers.kafka.HDFSWrite;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FileUtil;
@@ -73,8 +73,8 @@ public class HdfsTest {
 
     private static MiniDFSCluster hdfsCluster;
     private static File baseDir;
-    private static NewCommonConfiguration config;
-    private static NewHdfsConfiguration hdfsConfig;
+    private static CommonConfiguration config;
+    private static HdfsConfiguration hdfsConfig;
     private FileSystem fs;
 
     // Start minicluster and initialize config.
@@ -93,7 +93,7 @@ public class HdfsTest {
             map.put("skipEmptyRFC5424Records", "true");
             map.put("pruneOffset", "157784760000");
             map.put("consumerTimeout", "600000");
-            config = new NewCommonConfiguration(map);
+            config = new CommonConfiguration(map);
             // Create a HDFS miniCluster
             baseDir = Files.createTempDirectory("test_hdfs").toFile().getAbsoluteFile();
             hdfsCluster = new TestMiniClusterFactory().create(baseDir);
@@ -112,7 +112,7 @@ public class HdfsTest {
             hdfsMap.put("hadoop.kerberos.keytab.login.autorenewal.enabled", "true");
             hdfsMap.put("dfs.data.transfer.protection", "test");
             hdfsMap.put("dfs.encrypt.data.transfer.cipher.suites", "test");
-            hdfsConfig = new NewHdfsConfiguration(hdfsMap);
+            hdfsConfig = new HdfsConfiguration(hdfsMap);
             fs = new TestFileSystemFactory().create(hdfsConfig.hdfsUri());
         });
     }

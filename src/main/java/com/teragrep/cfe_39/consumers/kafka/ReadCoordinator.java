@@ -45,9 +45,9 @@
  */
 package com.teragrep.cfe_39.consumers.kafka;
 
-import com.teragrep.cfe_39.configuration.NewCommonConfiguration;
-import com.teragrep.cfe_39.configuration.NewHdfsConfiguration;
-import com.teragrep.cfe_39.configuration.NewKafkaConfiguration;
+import com.teragrep.cfe_39.configuration.CommonConfiguration;
+import com.teragrep.cfe_39.configuration.HdfsConfiguration;
+import com.teragrep.cfe_39.configuration.KafkaConfiguration;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
@@ -61,17 +61,17 @@ public final class ReadCoordinator implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(ReadCoordinator.class);
 
     private final String queueTopic;
-    private final NewCommonConfiguration config;
-    private final NewHdfsConfiguration hdfsConfig;
-    private final NewKafkaConfiguration kafkaConfig;
+    private final CommonConfiguration config;
+    private final HdfsConfiguration hdfsConfig;
+    private final KafkaConfiguration kafkaConfig;
     private final BatchDistributionImpl callbackFunction;
     private final Map<TopicPartition, Long> hdfsStartOffsets;
 
     public ReadCoordinator(
             String queueTopic,
-            NewCommonConfiguration config,
-            NewKafkaConfiguration kafkaConfig,
-            NewHdfsConfiguration hdfsConfig,
+            CommonConfiguration config,
+            KafkaConfiguration kafkaConfig,
+            HdfsConfiguration hdfsConfig,
             BatchDistributionImpl callbackFunction,
             Map<TopicPartition, Long> hdfsStartOffsets
     ) {

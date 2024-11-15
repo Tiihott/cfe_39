@@ -45,7 +45,7 @@
  */
 package com.teragrep.cfe_39.consumers.kafka;
 
-import com.teragrep.cfe_39.configuration.NewHdfsConfiguration;
+import com.teragrep.cfe_39.configuration.HdfsConfiguration;
 import org.apache.hadoop.fs.*;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
@@ -64,7 +64,7 @@ public final class HDFSRead implements AutoCloseable {
     private final FileSystem fs;
     private final String path;
 
-    public HDFSRead(NewHdfsConfiguration config, FileSystem fs) throws IOException {
+    public HDFSRead(HdfsConfiguration config, FileSystem fs) throws IOException {
         this.fs = fs;
         path = config.hdfsPath();
     }

@@ -45,9 +45,9 @@
  */
 package com.teragrep.cfe_39.consumers.kafka;
 
-import com.teragrep.cfe_39.configuration.NewCommonConfiguration;
-import com.teragrep.cfe_39.configuration.NewHdfsConfiguration;
-import com.teragrep.cfe_39.configuration.NewKafkaConfiguration;
+import com.teragrep.cfe_39.configuration.CommonConfiguration;
+import com.teragrep.cfe_39.configuration.HdfsConfiguration;
+import com.teragrep.cfe_39.configuration.KafkaConfiguration;
 import com.teragrep.cfe_39.metrics.*;
 import com.teragrep.cfe_39.metrics.topic.TopicCounter;
 import org.apache.hadoop.fs.FileSystem;
@@ -71,9 +71,9 @@ import java.util.regex.Pattern;
 public final class HdfsDataIngestion {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HdfsDataIngestion.class);
-    private final NewCommonConfiguration config;
-    private final NewHdfsConfiguration hdfsConfig;
-    private final NewKafkaConfiguration kafkaConfig;
+    private final CommonConfiguration config;
+    private final HdfsConfiguration hdfsConfig;
+    private final KafkaConfiguration kafkaConfig;
     private final org.apache.kafka.clients.consumer.Consumer<byte[], byte[]> kafkaConsumer;
     private final List<Thread> threads = new ArrayList<>();
     private final Set<String> activeTopics = new HashSet<>();
@@ -82,9 +82,9 @@ public final class HdfsDataIngestion {
     private final Map<TopicPartition, Long> hdfsStartOffsets;
 
     public HdfsDataIngestion(
-            NewCommonConfiguration config,
-            NewHdfsConfiguration hdfsConfiguration,
-            NewKafkaConfiguration kafkaConfiguration
+            CommonConfiguration config,
+            HdfsConfiguration hdfsConfiguration,
+            KafkaConfiguration kafkaConfiguration
     ) throws IOException {
         this.config = config;
         this.hdfsConfig = hdfsConfiguration;

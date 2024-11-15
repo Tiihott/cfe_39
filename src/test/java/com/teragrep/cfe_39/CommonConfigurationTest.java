@@ -45,7 +45,7 @@
  */
 package com.teragrep.cfe_39;
 
-import com.teragrep.cfe_39.configuration.NewCommonConfiguration;
+import com.teragrep.cfe_39.configuration.CommonConfiguration;
 import com.teragrep.cnf_01.PathConfiguration;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -56,9 +56,9 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
-public class NewCommonConfigurationTest {
+public class CommonConfigurationTest {
 
-    private final Logger LOGGER = LoggerFactory.getLogger(NewCommonConfigurationTest.class);
+    private final Logger LOGGER = LoggerFactory.getLogger(CommonConfigurationTest.class);
 
     @Test
     public void configurationTest() {
@@ -73,7 +73,7 @@ public class NewCommonConfigurationTest {
                             "{numOfConsumers=2, queueTopicPattern=^testConsumerTopic-*$, queueDirectory=/opt/teragrep/cfe_39/etc/AVRO/, skipNonRFC5424Records=true, maximumFileSize=3000, skipEmptyRFC5424Records=true, consumerTimeout=600000}",
                             map.toString()
                     );
-            NewCommonConfiguration commonConfig = new NewCommonConfiguration(map);
+            CommonConfiguration commonConfig = new CommonConfiguration(map);
 
             // Assert that printers return correct values.
             Assertions

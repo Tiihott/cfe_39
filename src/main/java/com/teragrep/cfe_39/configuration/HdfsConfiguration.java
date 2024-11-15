@@ -51,13 +51,13 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
-public final class NewHdfsConfiguration {
+public final class HdfsConfiguration {
 
-    private final Logger LOGGER = LoggerFactory.getLogger(NewHdfsConfiguration.class);
+    private final Logger LOGGER = LoggerFactory.getLogger(HdfsConfiguration.class);
 
     private final Map<String, String> config;
 
-    public NewHdfsConfiguration(Map<String, String> config) {
+    public HdfsConfiguration(Map<String, String> config) {
         this.config = config;
     }
 

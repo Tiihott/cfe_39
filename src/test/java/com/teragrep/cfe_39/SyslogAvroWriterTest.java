@@ -46,7 +46,7 @@
 package com.teragrep.cfe_39;
 
 import com.teragrep.cfe_39.avro.SyslogRecord;
-import com.teragrep.cfe_39.configuration.NewCommonConfiguration;
+import com.teragrep.cfe_39.configuration.CommonConfiguration;
 import com.teragrep.cfe_39.consumers.kafka.KafkaRecordImpl;
 import com.teragrep.cfe_39.consumers.kafka.SyslogAvroWriter;
 import org.apache.avro.file.DataFileReader;
@@ -67,7 +67,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 public class SyslogAvroWriterTest {
 
-    private static NewCommonConfiguration config;
+    private static CommonConfiguration config;
 
     // Prepares known state for testing.
     @BeforeEach
@@ -85,7 +85,7 @@ public class SyslogAvroWriterTest {
             map.put("skipEmptyRFC5424Records", "true");
             map.put("pruneOffset", "157784760000");
             map.put("consumerTimeout", "600000");
-            config = new NewCommonConfiguration(map);
+            config = new CommonConfiguration(map);
         });
     }
 

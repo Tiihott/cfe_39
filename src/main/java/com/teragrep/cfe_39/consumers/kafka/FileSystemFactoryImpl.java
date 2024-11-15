@@ -45,11 +45,10 @@
  */
 package com.teragrep.cfe_39.consumers.kafka;
 
-import com.teragrep.cfe_39.configuration.NewHdfsConfiguration;
+import com.teragrep.cfe_39.configuration.HdfsConfiguration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
-import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.security.UserGroupInformation;
 
 import java.io.IOException;
@@ -57,11 +56,11 @@ import java.net.URI;
 
 public final class FileSystemFactoryImpl implements FileSystemFactory {
 
-    private final HdfsConfiguration conf;
-    private final NewHdfsConfiguration configuration;
+    private final org.apache.hadoop.hdfs.HdfsConfiguration conf;
+    private final HdfsConfiguration configuration;
 
-    public FileSystemFactoryImpl(NewHdfsConfiguration configuration) {
-        this.conf = new HdfsConfiguration();
+    public FileSystemFactoryImpl(HdfsConfiguration configuration) {
+        this.conf = new org.apache.hadoop.hdfs.HdfsConfiguration();
         this.configuration = configuration;
     }
 
