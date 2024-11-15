@@ -156,28 +156,6 @@ public final class NewCommonConfiguration {
         }
     }
 
-    public long pruneOffset() {
-        final String pruneString = config.get("pruneOffset");
-        if (pruneString == null) {
-            throw new ConfigurationException("Configuration error. <pruneOffset> must be set.");
-        }
-        else {
-            final long pruneOffset;
-            try {
-                pruneOffset = Long.parseLong(pruneString);
-            }
-            catch (NumberFormatException e) {
-                throw new RuntimeException(e);
-            }
-            if (pruneOffset <= 0) {
-                throw new ConfigurationException("Configuration error. <pruneOffset> must be a positive long value.");
-            }
-            else {
-                return pruneOffset;
-            }
-        }
-    }
-
     public long consumerTimeout() {
         final String consumerTimeoutString = config.get("consumerTimeout");
         if (consumerTimeoutString == null) {

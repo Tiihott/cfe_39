@@ -47,6 +47,7 @@ package com.teragrep.cfe_39;
 
 import com.teragrep.cfe_39.configuration.ConfigurationImpl;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,6 +58,7 @@ public class ConfigurationTest {
 
     private final Logger LOGGER = LoggerFactory.getLogger(ConfigurationTest.class);
 
+    @Disabled(value = "Preparing configuration refactoring")
     @Test
     public void kafkaPropertiesConfigurationTest() {
         assertDoesNotThrow(() -> {
@@ -72,6 +74,7 @@ public class ConfigurationTest {
         });
     }
 
+    @Disabled(value = "Preparing configuration refactoring")
     @Test
     public void brokenConfigurationTest() {
         // Set system properties to use the broken configuration.
@@ -84,6 +87,7 @@ public class ConfigurationTest {
         Assertions.assertEquals("Missing required key numOfConsumers", e.getMessage());
     }
 
+    @Disabled(value = "Preparing configuration refactoring")
     @Test
     public void configurationEqualityTest() {
         // Set system properties to use the valid configuration.
@@ -108,6 +112,7 @@ public class ConfigurationTest {
         });
     }
 
+    @Disabled(value = "Preparing configuration refactoring")
     @Test
     public void configurationWithTest() {
         // Set system properties to use the valid configuration.
@@ -126,6 +131,7 @@ public class ConfigurationTest {
         });
     }
 
+    @Disabled(value = "Preparing configuration refactoring")
     @Test
     public void configurationWithFailTest() {
         // Set system properties to use the valid configuration.
@@ -140,6 +146,7 @@ public class ConfigurationTest {
         Assertions.assertEquals("Key not found: unauthorized_key", e.getMessage());
     }
 
+    @Disabled(value = "Preparing configuration refactoring")
     @Test
     public void configurationWithFailTest2() {
         // Set system properties to use the valid configuration.

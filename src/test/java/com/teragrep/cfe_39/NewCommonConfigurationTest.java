@@ -70,7 +70,7 @@ public class NewCommonConfigurationTest {
             map = pathConfiguration.asMap();
             Assertions
                     .assertEquals(
-                            "{pruneOffset=157784760000, numOfConsumers=2, queueTopicPattern=^testConsumerTopic-*$, queueDirectory=/opt/teragrep/cfe_39/etc/AVRO/, skipNonRFC5424Records=true, maximumFileSize=3000, skipEmptyRFC5424Records=true, consumerTimeout=600000}",
+                            "{numOfConsumers=2, queueTopicPattern=^testConsumerTopic-*$, queueDirectory=/opt/teragrep/cfe_39/etc/AVRO/, skipNonRFC5424Records=true, maximumFileSize=3000, skipEmptyRFC5424Records=true, consumerTimeout=600000}",
                             map.toString()
                     );
             NewCommonConfiguration commonConfig = new NewCommonConfiguration(map);
@@ -85,7 +85,6 @@ public class NewCommonConfigurationTest {
             Assertions.assertEquals(2, commonConfig.numOfConsumers());
             Assertions.assertEquals(3000, commonConfig.maximumFileSize());
             Assertions.assertEquals(600000, commonConfig.consumerTimeout());
-            Assertions.assertEquals(157784760000L, commonConfig.pruneOffset());
             Assertions.assertTrue(commonConfig.skipNonRFC5424Records());
             Assertions.assertTrue(commonConfig.skipEmptyRFC5424Records());
             Assertions.assertEquals("/opt/teragrep/cfe_39/etc/AVRO/", commonConfig.queueDirectory());
