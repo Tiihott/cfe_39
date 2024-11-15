@@ -45,7 +45,9 @@
  */
 package com.teragrep.cfe_39.consumers.kafka;
 
-import com.teragrep.cfe_39.configuration.ConfigurationImpl;
+import com.teragrep.cfe_39.configuration.NewCommonConfiguration;
+import com.teragrep.cfe_39.configuration.NewHdfsConfiguration;
+import com.teragrep.cfe_39.configuration.NewKafkaConfiguration;
 import com.teragrep.cfe_39.metrics.*;
 import com.teragrep.cfe_39.metrics.topic.TopicCounter;
 import org.apache.hadoop.fs.FileSystem;
@@ -69,7 +71,9 @@ import java.util.regex.Pattern;
 public final class HdfsDataIngestion {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HdfsDataIngestion.class);
-    private final ConfigurationImpl config;
+    private final NewCommonConfiguration config;
+    private final NewHdfsConfiguration hdfsConfig;
+    private final NewKafkaConfiguration kafkaConfig;
     private final org.apache.kafka.clients.consumer.Consumer<byte[], byte[]> kafkaConsumer;
     private final List<Thread> threads = new ArrayList<>();
     private final Set<String> activeTopics = new HashSet<>();
@@ -77,26 +81,31 @@ public final class HdfsDataIngestion {
     private final int numOfConsumers;
     private final Map<TopicPartition, Long> hdfsStartOffsets;
 
-    public HdfsDataIngestion(ConfigurationImpl config) throws IOException {
+    public HdfsDataIngestion(
+            NewCommonConfiguration config,
+            NewHdfsConfiguration hdfsConfiguration,
+            NewKafkaConfiguration kafkaConfiguration
+    ) throws IOException {
         this.config = config;
-        this.numOfConsumers = Integer.parseInt(config.valueOf("numOfConsumers"));
-        this.useMockKafkaConsumer = Boolean.parseBoolean(config.valueOf("useMockKafkaConsumer"));
+        this.hdfsConfig = hdfsConfiguration;
+        this.kafkaConfig = kafkaConfiguration;
+        this.numOfConsumers = config.numOfConsumers();
+        this.useMockKafkaConsumer = kafkaConfiguration.useMockKafkaConsumer();
         if (useMockKafkaConsumer) {
             this.kafkaConsumer = new MockKafkaConsumerFactory(0).getConsumer(); // A consumer used only for scanning the available topics to be allocated to consumers running in different threads (thus 0 as input parameter).
         }
         else {
             Properties kafkaProperties = new Properties();
-            kafkaProperties.put("bootstrap.servers", config.valueOf("bootstrap.servers"));
-            kafkaProperties.put("auto.offset.reset", config.valueOf("auto.offset.reset"));
-            kafkaProperties.put("enable.auto.commit", config.valueOf("enable.auto.commit"));
-            kafkaProperties.put("group.id", config.valueOf("group.id"));
-            kafkaProperties.put("security.protocol", config.valueOf("security.protocol"));
-            kafkaProperties.put("sasl.mechanism", config.valueOf("sasl.mechanism"));
-            kafkaProperties.put("max.poll.records", config.valueOf("max.poll.records"));
-            kafkaProperties.put("fetch.max.bytes", config.valueOf("fetch.max.bytes"));
-            kafkaProperties.put("request.timeout.ms", config.valueOf("request.timeout.ms"));
-            kafkaProperties.put("max.poll.interval.ms", config.valueOf("max.poll.interval.ms"));
-            kafkaProperties.put("useMockKafkaConsumer", config.valueOf("useMockKafkaConsumer"));
+            kafkaProperties.put("bootstrap.servers", kafkaConfiguration.bootstrapServers());
+            kafkaProperties.put("auto.offset.reset", kafkaConfiguration.autoOffsetReset());
+            kafkaProperties.put("enable.auto.commit", kafkaConfiguration.enableAutoCommit());
+            kafkaProperties.put("group.id", kafkaConfiguration.groupId());
+            kafkaProperties.put("security.protocol", kafkaConfiguration.securityProtocol());
+            kafkaProperties.put("sasl.mechanism", kafkaConfiguration.saslMechanism());
+            kafkaProperties.put("max.poll.records", kafkaConfiguration.maxPollRecords());
+            kafkaProperties.put("fetch.max.bytes", kafkaConfiguration.fetchMaxBytes());
+            kafkaProperties.put("request.timeout.ms", kafkaConfiguration.requestTimeoutMs());
+            kafkaProperties.put("max.poll.interval.ms", kafkaConfiguration.maxPollIntervalMs());
             this.kafkaConsumer = new KafkaConsumer<>(
                     kafkaProperties,
                     new ByteArrayDeserializer(),
@@ -116,11 +125,11 @@ public final class HdfsDataIngestion {
         List<TopicCounter> topicCounters = new CopyOnWriteArrayList<>();
 
         // Initialize FileSystem
-        FileSystemFactoryImpl fileSystemFactoryImpl = new FileSystemFactoryImpl(config);
+        FileSystemFactoryImpl fileSystemFactoryImpl = new FileSystemFactoryImpl(hdfsConfig);
         FileSystem fs = fileSystemFactoryImpl.create(true);
 
         // Generates offsets of the already committed records for Kafka and passes them to the kafka consumers.
-        try (HDFSRead hr = new HDFSRead(config, fs)) {
+        try (HDFSRead hr = new HDFSRead(hdfsConfig, fs)) {
             hdfsStartOffsets.clear();
             hdfsStartOffsets.putAll(hr.hdfsStartOffsets());
             LOGGER.debug("topicPartitionStartMap generated succesfully: <{}>", hdfsStartOffsets);
@@ -131,7 +140,7 @@ public final class HdfsDataIngestion {
 
         boolean keepRunning = true;
         while (keepRunning) {
-            if ("kerberos".equals(config.valueOf("hadoop.security.authentication"))) {
+            if ("kerberos".equals(hdfsConfig.hadoopSecurityAuthentication())) {
                 UserGroupInformation.getLoginUser().checkTGTAndReloginFromKeytab();
             }
             LOGGER.debug("Scanning for threads");
@@ -145,7 +154,7 @@ public final class HdfsDataIngestion {
                 LOGGER.info("topic that is being pruned: <{}>", topic_name);
                 if (topic_name != null) {
                     try {
-                        HDFSPrune hdfsPrune = new HDFSPrune(config, topic_name, fs);
+                        HDFSPrune hdfsPrune = new HDFSPrune(hdfsConfig, topic_name, fs);
                         hdfsPrune.prune();
                     }
                     catch (IOException e) {
@@ -180,11 +189,19 @@ public final class HdfsDataIngestion {
         for (int threadId = 1; numOfConsumers >= threadId; threadId++) {
             BatchDistributionImpl output = new BatchDistributionImpl(
                     config, // Configuration settings
+                    hdfsConfig,
                     topic, // String, the name of the topic
                     durationStatistics, // RuntimeStatistics object from metrics
                     topicCounter // TopicCounter object from metrics
             );
-            ReadCoordinator readCoordinator = new ReadCoordinator(topic, config, output, hdfsStartOffsets);
+            ReadCoordinator readCoordinator = new ReadCoordinator(
+                    topic,
+                    config,
+                    kafkaConfig,
+                    hdfsConfig,
+                    output,
+                    hdfsStartOffsets
+            );
             Thread readThread = new Thread(null, readCoordinator, topic + threadId); // Starts the thread with readCoordinator that creates the consumer and subscribes to the topic.
             threads.add(readThread);
             readThread.start(); // Starts the thread, in other words proceeds to call run() function of ReadCoordinator.
@@ -194,7 +211,7 @@ public final class HdfsDataIngestion {
 
     private void topicScan(DurationStatistics durationStatistics, List<TopicCounter> topicCounters) {
         Map<String, List<PartitionInfo>> listTopics = kafkaConsumer.listTopics(Duration.ofSeconds(60));
-        Pattern topicsRegex = Pattern.compile(config.valueOf("queueTopicPattern"));
+        Pattern topicsRegex = Pattern.compile(config.queueTopicPattern());
         //         Find the topics available in Kafka based on given QueueTopicPattern, both active and in-active.
         Set<String> foundTopics = new HashSet<>();
         Map<String, List<PartitionInfo>> foundPartitions = new HashMap<>();
@@ -206,7 +223,7 @@ public final class HdfsDataIngestion {
             }
         }
         if (foundTopics.isEmpty()) {
-            throw new IllegalStateException("Pattern <[" + config.valueOf("queueTopicPattern") + "]> found no topics.");
+            throw new IllegalStateException("Pattern <[" + config.queueTopicPattern() + "]> found no topics.");
         }
         // subtract currently active topics from found topics
         foundTopics.removeAll(activeTopics);

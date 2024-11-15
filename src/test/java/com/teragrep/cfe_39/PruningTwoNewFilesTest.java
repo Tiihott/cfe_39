@@ -45,7 +45,7 @@
  */
 package com.teragrep.cfe_39;
 
-import com.teragrep.cfe_39.configuration.ConfigurationImpl;
+import com.teragrep.cfe_39.configuration.NewHdfsConfiguration;
 import com.teragrep.cfe_39.consumers.kafka.HDFSPrune;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FileUtil;
@@ -60,6 +60,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -72,30 +74,37 @@ public class PruningTwoNewFilesTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(PruningTwoNewFilesTest.class);
     private static MiniDFSCluster hdfsCluster;
     private static File baseDir;
-    private static ConfigurationImpl config;
+    private static NewHdfsConfiguration hdfsConfig;
     private FileSystem fs;
 
     // Prepares known state for testing.
     @BeforeEach
     public void startMiniCluster() {
         assertDoesNotThrow(() -> {
-            // Set system properties to use the valid configuration.
-            System
-                    .setProperty("cfe_39.config.location", System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
-            config = new ConfigurationImpl();
-            config
-                    .load(System.getProperty("cfe_39.config.location", "/opt/teragrep/cfe_39/etc/application.properties"));
             // Create a HDFS miniCluster
             baseDir = Files.createTempDirectory("test_hdfs").toFile().getAbsoluteFile();
-            hdfsCluster = new TestMiniClusterFactory().create(config, baseDir);
-            config.with("hdfsuri", "hdfs://localhost:" + hdfsCluster.getNameNodePort() + "/");
-            config.with("queueDirectory", System.getProperty("user.dir") + "/etc/AVRO/");
-            config.with("hadoop.security.authentication", "false");
-            fs = new TestFileSystemFactory().create(config.valueOf("hdfsuri"));
+            hdfsCluster = new TestMiniClusterFactory().create(baseDir);
+            Map<String, String> hdfsMap = new HashMap<>();
+            hdfsMap.put("pruneOffset", "157784760000");
+            hdfsMap.put("hdfsuri", "hdfs://localhost:" + hdfsCluster.getNameNodePort() + "/");
+            hdfsMap.put("hdfsPath", "hdfs:///opt/teragrep/cfe_39/srv/");
+            hdfsMap.put("java.security.krb5.kdc", "test");
+            hdfsMap.put("java.security.krb5.realm", "test");
+            hdfsMap.put("hadoop.security.authentication", "false");
+            hdfsMap.put("hadoop.security.authorization", "test");
+            hdfsMap.put("dfs.namenode.kerberos.principal.pattern", "test");
+            hdfsMap.put("KerberosKeytabUser", "test");
+            hdfsMap.put("KerberosKeytabPath", "test");
+            hdfsMap.put("dfs.client.use.datanode.hostname", "false");
+            hdfsMap.put("hadoop.kerberos.keytab.login.autorenewal.enabled", "true");
+            hdfsMap.put("dfs.data.transfer.protection", "test");
+            hdfsMap.put("dfs.encrypt.data.transfer.cipher.suites", "test");
+            hdfsConfig = new NewHdfsConfiguration(hdfsMap);
+            fs = new TestFileSystemFactory().create(hdfsConfig.hdfsUri());
 
             // Inserts pre-made avro-files with new timestamps to HDFS, which are normally generated during data ingestion from mock kafka consumer.
 
-            String path = config.valueOf("hdfsPath") + "/" + "testConsumerTopic"; // "hdfs:///opt/teragrep/cfe_39/srv/testConsumerTopic"
+            String path = hdfsConfig.hdfsPath() + "/" + "testConsumerTopic"; // "hdfs:///opt/teragrep/cfe_39/srv/testConsumerTopic"
             // Sets the directory where the data should be stored, if the directory doesn't exist then it's created.
             Path newDirectoryPath = new Path(path);
             // Create new Directory
@@ -137,25 +146,23 @@ public class PruningTwoNewFilesTest {
     @Test
     public void twoNewFilesTest() {
         // This test case is for testing the functionality of the HDFSPrune.java when the database holds two files with a timestamp that shouldn't trigger pruning of old files.
-        Assertions.assertTrue(Long.parseLong(config.valueOf("pruneOffset")) >= 300000L); // Fails the test if the config is not correct, too low pruning offset can prune the files if the test is lagging.
+        Assertions.assertTrue(hdfsConfig.pruneOffset() >= 300000L); // Fails the test if the config is not correct, too low pruning offset can prune the files if the test is lagging.
 
         assertDoesNotThrow(() -> {
             Assertions
-                    .assertEquals(2, fs.listStatus(new Path(config.valueOf("hdfsPath") + "/" + "testConsumerTopic")).length);
+                    .assertEquals(2, fs.listStatus(new Path(hdfsConfig.hdfsPath() + "/" + "testConsumerTopic")).length);
+            Assertions.assertTrue(fs.exists(new Path(hdfsConfig.hdfsPath() + "/" + "testConsumerTopic" + "/" + "0.9")));
             Assertions
-                    .assertTrue(fs.exists(new Path(config.valueOf("hdfsPath") + "/" + "testConsumerTopic" + "/" + "0.9")));
-            Assertions
-                    .assertTrue(fs.exists(new Path(config.valueOf("hdfsPath") + "/" + "testConsumerTopic" + "/" + "0.13")));
-            HDFSPrune hdfsPrune = new HDFSPrune(config, "testConsumerTopic", fs);
+                    .assertTrue(fs.exists(new Path(hdfsConfig.hdfsPath() + "/" + "testConsumerTopic" + "/" + "0.13")));
+            HDFSPrune hdfsPrune = new HDFSPrune(hdfsConfig, "testConsumerTopic", fs);
             int deleted = hdfsPrune.prune();
             Assertions.assertEquals(0, deleted);
             // Also check with HDFS access if expected files still exist.
             Assertions
-                    .assertEquals(2, fs.listStatus(new Path(config.valueOf("hdfsPath") + "/" + "testConsumerTopic")).length);
+                    .assertEquals(2, fs.listStatus(new Path(hdfsConfig.hdfsPath() + "/" + "testConsumerTopic")).length);
+            Assertions.assertTrue(fs.exists(new Path(hdfsConfig.hdfsPath() + "/" + "testConsumerTopic" + "/" + "0.9")));
             Assertions
-                    .assertTrue(fs.exists(new Path(config.valueOf("hdfsPath") + "/" + "testConsumerTopic" + "/" + "0.9")));
-            Assertions
-                    .assertTrue(fs.exists(new Path(config.valueOf("hdfsPath") + "/" + "testConsumerTopic" + "/" + "0.13")));
+                    .assertTrue(fs.exists(new Path(hdfsConfig.hdfsPath() + "/" + "testConsumerTopic" + "/" + "0.13")));
         });
     }
 }

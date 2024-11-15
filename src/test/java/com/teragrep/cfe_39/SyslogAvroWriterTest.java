@@ -46,7 +46,7 @@
 package com.teragrep.cfe_39;
 
 import com.teragrep.cfe_39.avro.SyslogRecord;
-import com.teragrep.cfe_39.configuration.ConfigurationImpl;
+import com.teragrep.cfe_39.configuration.NewCommonConfiguration;
 import com.teragrep.cfe_39.consumers.kafka.KafkaRecordImpl;
 import com.teragrep.cfe_39.consumers.kafka.SyslogAvroWriter;
 import org.apache.avro.file.DataFileReader;
@@ -60,32 +60,39 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 public class SyslogAvroWriterTest {
 
-    private static ConfigurationImpl config;
+    private static NewCommonConfiguration config;
 
     // Prepares known state for testing.
     @BeforeEach
     public void startMiniCluster() {
         assertDoesNotThrow(() -> {
-            // Set system properties to use the valid configuration.
-            System
-                    .setProperty("cfe_39.config.location", System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
-            config = new ConfigurationImpl();
-            config
-                    .load(System.getProperty("cfe_39.config.location", "/opt/teragrep/cfe_39/etc/application.properties"));
-            config.with("queueDirectory", System.getProperty("user.dir") + "/etc/AVRO/");
-            config.with("hadoop.security.authentication", "false");
+            Map<String, String> map = new HashMap<>();
+            map.put("log4j2.configurationFile", "/opt/teragrep/cfe_39/etc/log4j2.properties");
+            map.put("egress.configurationFile", "/opt/teragrep/cfe_39/etc/egress.properties");
+            map.put("ingress.configurationFile", "/opt/teragrep/cfe_39/etc/ingress.properties");
+            map.put("queueDirectory", System.getProperty("user.dir") + "/etc/AVRO/");
+            map.put("maximumFileSize", "3000");
+            map.put("queueTopicPattern", "^testConsumerTopic-*$");
+            map.put("numOfConsumers", "2");
+            map.put("skipNonRFC5424Records", "true");
+            map.put("skipEmptyRFC5424Records", "true");
+            map.put("pruneOffset", "157784760000");
+            map.put("consumerTimeout", "600000");
+            config = new NewCommonConfiguration(map);
         });
     }
 
     // Teardown the minicluster
     @AfterEach
     public void teardownMiniCluster() {
-        File queueDirectory = new File(config.valueOf("queueDirectory"));
+        File queueDirectory = new File(config.queueDirectory());
         File[] files = queueDirectory.listFiles();
         if (files[0].getName().equals("topicName0.1")) {
             files[0].delete();
@@ -97,9 +104,9 @@ public class SyslogAvroWriterTest {
 
         assertDoesNotThrow(() -> {
 
-            File queueDirectory = new File(config.valueOf("queueDirectory"));
+            File queueDirectory = new File(config.queueDirectory());
 
-            File syslogFile = new File(config.valueOf("queueDirectory") + File.separator + "topicName0.1");
+            File syslogFile = new File(config.queueDirectory() + File.separator + "topicName0.1");
 
             ConsumerRecord<byte[], byte[]> record0 = new ConsumerRecord<>(
                     "topicName",

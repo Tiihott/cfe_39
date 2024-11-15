@@ -46,7 +46,8 @@
 package com.teragrep.cfe_39;
 
 import com.teragrep.cfe_39.avro.SyslogRecord;
-import com.teragrep.cfe_39.configuration.ConfigurationImpl;
+import com.teragrep.cfe_39.configuration.NewCommonConfiguration;
+import com.teragrep.cfe_39.configuration.NewHdfsConfiguration;
 import com.teragrep.cfe_39.consumers.kafka.BatchDistributionImpl;
 import com.teragrep.cfe_39.consumers.kafka.KafkaRecordImpl;
 import com.teragrep.cfe_39.metrics.DurationStatistics;
@@ -69,7 +70,9 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
@@ -82,25 +85,48 @@ public class BatchDistributionTest {
 
     private static MiniDFSCluster hdfsCluster;
     private static File baseDir;
-    private static ConfigurationImpl config;
+    private static NewCommonConfiguration config;
+    private static NewHdfsConfiguration hdfsConfig;
     private FileSystem fs;
 
     // Prepares known state for testing.
     @BeforeEach
     public void startMiniCluster() {
         assertDoesNotThrow(() -> {
-            // Set system properties to use the valid configuration.
-            System
-                    .setProperty("cfe_39.config.location", System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
-            config = new ConfigurationImpl();
-            config
-                    .load(System.getProperty("cfe_39.config.location", "/opt/teragrep/cfe_39/etc/application.properties"));
+            Map<String, String> map = new HashMap<>();
+            map.put("log4j2.configurationFile", "/opt/teragrep/cfe_39/etc/log4j2.properties");
+            map.put("egress.configurationFile", "/opt/teragrep/cfe_39/etc/egress.properties");
+            map.put("ingress.configurationFile", "/opt/teragrep/cfe_39/etc/ingress.properties");
+            map.put("queueDirectory", System.getProperty("user.dir") + "/etc/AVRO/");
+            map.put("maximumFileSize", "3000");
+            map.put("queueTopicPattern", "^testConsumerTopic-*$");
+            map.put("numOfConsumers", "2");
+            map.put("skipNonRFC5424Records", "true");
+            map.put("skipEmptyRFC5424Records", "true");
+            map.put("pruneOffset", "157784760000");
+            map.put("consumerTimeout", "600000");
+            config = new NewCommonConfiguration(map);
+
             // Create a HDFS miniCluster
             baseDir = Files.createTempDirectory("test_hdfs").toFile().getAbsoluteFile();
-            hdfsCluster = new TestMiniClusterFactory().create(config, baseDir);
-            config.with("hdfsuri", "hdfs://localhost:" + hdfsCluster.getNameNodePort() + "/");
-            config.with("queueDirectory", System.getProperty("user.dir") + "/etc/AVRO/");
-            fs = new TestFileSystemFactory().create(config.valueOf("hdfsuri"));
+            hdfsCluster = new TestMiniClusterFactory().create(baseDir);
+            Map<String, String> hdfsMap = new HashMap<>();
+            hdfsMap.put("pruneOffset", "157784760000");
+            hdfsMap.put("hdfsuri", "hdfs://localhost:" + hdfsCluster.getNameNodePort() + "/");
+            hdfsMap.put("hdfsPath", "hdfs:///opt/teragrep/cfe_39/srv/");
+            hdfsMap.put("java.security.krb5.kdc", "test");
+            hdfsMap.put("java.security.krb5.realm", "test");
+            hdfsMap.put("hadoop.security.authentication", "kerberos");
+            hdfsMap.put("hadoop.security.authorization", "test");
+            hdfsMap.put("dfs.namenode.kerberos.principal.pattern", "test");
+            hdfsMap.put("KerberosKeytabUser", "test");
+            hdfsMap.put("KerberosKeytabPath", "test");
+            hdfsMap.put("dfs.client.use.datanode.hostname", "false");
+            hdfsMap.put("hadoop.kerberos.keytab.login.autorenewal.enabled", "true");
+            hdfsMap.put("dfs.data.transfer.protection", "test");
+            hdfsMap.put("dfs.encrypt.data.transfer.cipher.suites", "test");
+            hdfsConfig = new NewHdfsConfiguration(hdfsMap);
+            fs = new TestFileSystemFactory().create(hdfsConfig.hdfsUri());
         });
     }
 
@@ -127,6 +153,7 @@ public class BatchDistributionTest {
 
             BatchDistributionImpl output = new BatchDistributionImpl(
                     config, // Configuration settings
+                    hdfsConfig,
                     "topicName", // String, the name of the topic
                     durationStatistics, // RuntimeStatistics object from metrics
                     new TopicCounter("topicName") // TopicCounter object from metrics
@@ -318,7 +345,7 @@ public class BatchDistributionTest {
 
             // Assert that records 11-13 are present in local avro-file.
 
-            File queueDirectory = new File(config.valueOf("queueDirectory"));
+            File queueDirectory = new File(config.queueDirectory());
             File[] files = queueDirectory.listFiles();
             Assertions.assertEquals(1, files.length);
 
@@ -336,9 +363,9 @@ public class BatchDistributionTest {
 
             // Assert that records 0-10 are present in HDFS
 
-            Assertions.assertEquals(1, fs.listStatus(new Path(config.valueOf("hdfsPath") + "/" + "topicName")).length);
-            Assertions.assertTrue(fs.exists(new Path(config.valueOf("hdfsPath") + "/" + "topicName" + "/" + "0.10")));
-            Path hdfsreadpath = new Path(config.valueOf("hdfsPath") + "/" + "topicName" + "/" + "0.10");
+            Assertions.assertEquals(1, fs.listStatus(new Path(hdfsConfig.hdfsPath() + "/" + "topicName")).length);
+            Assertions.assertTrue(fs.exists(new Path(hdfsConfig.hdfsPath() + "/" + "topicName" + "/" + "0.10")));
+            Path hdfsreadpath = new Path(hdfsConfig.hdfsPath() + "/" + "topicName" + "/" + "0.10");
             //Init input stream
             FSDataInputStream inputStream = fs.open(hdfsreadpath);
             //The data is in AVRO-format, so it can't be read as a string.
@@ -359,9 +386,9 @@ public class BatchDistributionTest {
 
             List<KafkaRecordImpl> kafkaRecordListEmpty = new ArrayList<>();
             output.accept(kafkaRecordListEmpty);
-            Assertions.assertEquals(2, fs.listStatus(new Path(config.valueOf("hdfsPath") + "/" + "topicName")).length);
-            Assertions.assertTrue(fs.exists(new Path(config.valueOf("hdfsPath") + "/" + "topicName" + "/" + "0.13")));
-            hdfsreadpath = new Path(config.valueOf("hdfsPath") + "/" + "topicName" + "/" + "0.13");
+            Assertions.assertEquals(2, fs.listStatus(new Path(hdfsConfig.hdfsPath() + "/" + "topicName")).length);
+            Assertions.assertTrue(fs.exists(new Path(hdfsConfig.hdfsPath() + "/" + "topicName" + "/" + "0.13")));
+            hdfsreadpath = new Path(hdfsConfig.hdfsPath() + "/" + "topicName" + "/" + "0.13");
             //Init input stream
             FSDataInputStream inputStream2 = fs.open(hdfsreadpath);
             //The data is in AVRO-format, so it can't be read as a string.
@@ -393,6 +420,7 @@ public class BatchDistributionTest {
 
             Consumer<List<KafkaRecordImpl>> output = new BatchDistributionImpl(
                     config, // Configuration settings
+                    hdfsConfig,
                     "topicName", // String, the name of the topic
                     durationStatistics, // RuntimeStatistics object from metrics
                     new TopicCounter("topicName") // TopicCounter object from metrics
@@ -449,13 +477,13 @@ public class BatchDistributionTest {
             kafkaRecordList.add(kafkaRecord3);
             output.accept(kafkaRecordList);
             output.accept(new ArrayList<>());
-            Assertions.assertEquals(1, fs.listStatus(new Path(config.valueOf("hdfsPath") + "/" + "topicName")).length);
-            Assertions.assertTrue(fs.exists(new Path(config.valueOf("hdfsPath") + "/" + "topicName" + "/" + "0.3")));
+            Assertions.assertEquals(1, fs.listStatus(new Path(hdfsConfig.hdfsPath() + "/" + "topicName")).length);
+            Assertions.assertTrue(fs.exists(new Path(hdfsConfig.hdfsPath() + "/" + "topicName" + "/" + "0.3")));
             // File in hdfs does not contain any empty records.
 
             // Assert that the file in hdfs contains the expected one record.
 
-            Path hdfsreadpath = new Path(config.valueOf("hdfsPath") + "/" + "topicName" + "/" + "0.3");
+            Path hdfsreadpath = new Path(hdfsConfig.hdfsPath() + "/" + "topicName" + "/" + "0.3");
             //Init input stream
             FSDataInputStream inputStream = fs.open(hdfsreadpath);
             //The data is in AVRO-format, so it can't be read as a string.
@@ -491,6 +519,7 @@ public class BatchDistributionTest {
 
             Consumer<List<KafkaRecordImpl>> output = new BatchDistributionImpl(
                     config, // Configuration settings
+                    hdfsConfig,
                     "topicName", // String, the name of the topic
                     durationStatistics, // RuntimeStatistics object from metrics
                     new TopicCounter("topicName") // TopicCounter object from metrics
@@ -530,13 +559,13 @@ public class BatchDistributionTest {
             kafkaRecordList.add(kafkaRecord3);
             output.accept(kafkaRecordList);
             output.accept(new ArrayList<>());
-            Assertions.assertEquals(1, fs.listStatus(new Path(config.valueOf("hdfsPath") + "/" + "topicName")).length);
-            Assertions.assertTrue(fs.exists(new Path(config.valueOf("hdfsPath") + "/" + "topicName" + "/" + "0.2")));
+            Assertions.assertEquals(1, fs.listStatus(new Path(hdfsConfig.hdfsPath() + "/" + "topicName")).length);
+            Assertions.assertTrue(fs.exists(new Path(hdfsConfig.hdfsPath() + "/" + "topicName" + "/" + "0.2")));
             // File in hdfs does not contain any records, but acts as a marker for kafka consumer offsets.
 
             // Assert that the file in hdfs contains the expected zero record.
 
-            Path hdfsreadpath = new Path(config.valueOf("hdfsPath") + "/" + "topicName" + "/" + "0.2");
+            Path hdfsreadpath = new Path(hdfsConfig.hdfsPath() + "/" + "topicName" + "/" + "0.2");
             //Init input stream
             FSDataInputStream inputStream = fs.open(hdfsreadpath);
             //The data is in AVRO-format, so it can't be read as a string.
@@ -572,6 +601,7 @@ public class BatchDistributionTest {
 
             Consumer<List<KafkaRecordImpl>> output = new BatchDistributionImpl(
                     config, // Configuration settings
+                    hdfsConfig,
                     "topicName", // String, the name of the topic
                     durationStatistics, // RuntimeStatistics object from metrics
                     new TopicCounter("topicName") // TopicCounter object from metrics
@@ -616,12 +646,12 @@ public class BatchDistributionTest {
             kafkaRecordList.add(kafkaRecord);
             output.accept(kafkaRecordList);
             output.accept(new ArrayList<>());
-            Assertions.assertEquals(1, fs.listStatus(new Path(config.valueOf("hdfsPath") + "/" + "topicName")).length);
-            Assertions.assertTrue(fs.exists(new Path(config.valueOf("hdfsPath") + "/" + "topicName" + "/" + "0.3")));
+            Assertions.assertEquals(1, fs.listStatus(new Path(hdfsConfig.hdfsPath() + "/" + "topicName")).length);
+            Assertions.assertTrue(fs.exists(new Path(hdfsConfig.hdfsPath() + "/" + "topicName" + "/" + "0.3")));
 
             // Assert that the file in hdfs contains the expected single record.
 
-            Path hdfsreadpath = new Path(config.valueOf("hdfsPath") + "/" + "topicName" + "/" + "0.3");
+            Path hdfsreadpath = new Path(hdfsConfig.hdfsPath() + "/" + "topicName" + "/" + "0.3");
             //Init input stream
             FSDataInputStream inputStream = fs.open(hdfsreadpath);
             //The data is in AVRO-format, so it can't be read as a string.

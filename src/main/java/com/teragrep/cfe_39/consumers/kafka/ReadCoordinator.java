@@ -45,7 +45,9 @@
  */
 package com.teragrep.cfe_39.consumers.kafka;
 
-import com.teragrep.cfe_39.configuration.ConfigurationImpl;
+import com.teragrep.cfe_39.configuration.NewCommonConfiguration;
+import com.teragrep.cfe_39.configuration.NewHdfsConfiguration;
+import com.teragrep.cfe_39.configuration.NewKafkaConfiguration;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
@@ -59,13 +61,17 @@ public final class ReadCoordinator implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(ReadCoordinator.class);
 
     private final String queueTopic;
-    private final ConfigurationImpl config;
+    private final NewCommonConfiguration config;
+    private final NewHdfsConfiguration hdfsConfig;
+    private final NewKafkaConfiguration kafkaConfig;
     private final BatchDistributionImpl callbackFunction;
     private final Map<TopicPartition, Long> hdfsStartOffsets;
 
     public ReadCoordinator(
             String queueTopic,
-            ConfigurationImpl config,
+            NewCommonConfiguration config,
+            NewKafkaConfiguration kafkaConfig,
+            NewHdfsConfiguration hdfsConfig,
             BatchDistributionImpl callbackFunction,
             Map<TopicPartition, Long> hdfsStartOffsets
     ) {
@@ -73,6 +79,8 @@ public final class ReadCoordinator implements Runnable {
         this.config = config;
         this.callbackFunction = callbackFunction;
         this.hdfsStartOffsets = hdfsStartOffsets;
+        this.kafkaConfig = kafkaConfig;
+        this.hdfsConfig = hdfsConfig;
     }
 
     private KafkaReader createKafkaReader(
@@ -91,7 +99,7 @@ public final class ReadCoordinator implements Runnable {
                 consumerRebalanceListenerImpl = new ConsumerRebalanceListenerImpl(
                         kafkaConsumer,
                         callbackFunctionInput,
-                        config
+                        hdfsConfig
                 );
                 kafkaConsumer.subscribe(Collections.singletonList(topic), consumerRebalanceListenerImpl);
             }
@@ -100,7 +108,7 @@ public final class ReadCoordinator implements Runnable {
                 consumerRebalanceListenerImpl = new ConsumerRebalanceListenerImpl(
                         kafkaConsumer,
                         callbackFunctionInput,
-                        config
+                        hdfsConfig
                 );
                 kafkaConsumer.subscribe(Collections.singletonList(topic), consumerRebalanceListenerImpl);
             }
@@ -109,7 +117,7 @@ public final class ReadCoordinator implements Runnable {
                 consumerRebalanceListenerImpl = new ConsumerRebalanceListenerImpl(
                         kafkaConsumer,
                         callbackFunctionInput,
-                        config
+                        hdfsConfig
                 );
                 kafkaConsumer.subscribe(Collections.singletonList(topic), consumerRebalanceListenerImpl);
             }
@@ -123,7 +131,7 @@ public final class ReadCoordinator implements Runnable {
             consumerRebalanceListenerImpl = new ConsumerRebalanceListenerImpl(
                     kafkaConsumer,
                     callbackFunctionInput,
-                    config
+                    hdfsConfig
             );
             kafkaConsumer.subscribe(Collections.singletonList(topic), consumerRebalanceListenerImpl);
         }
@@ -145,19 +153,18 @@ public final class ReadCoordinator implements Runnable {
     // Part or Runnable implementation, called when the thread is started.
     @Override
     public void run() {
-        boolean useMockKafkaConsumer = Boolean.parseBoolean(config.valueOf("useMockKafkaConsumer"));
+        boolean useMockKafkaConsumer = kafkaConfig.useMockKafkaConsumer();
         Properties kafkaProperties = new Properties();
-        kafkaProperties.put("bootstrap.servers", config.valueOf("bootstrap.servers"));
-        kafkaProperties.put("auto.offset.reset", config.valueOf("auto.offset.reset"));
-        kafkaProperties.put("enable.auto.commit", config.valueOf("enable.auto.commit"));
-        kafkaProperties.put("group.id", config.valueOf("group.id"));
-        kafkaProperties.put("security.protocol", config.valueOf("security.protocol"));
-        kafkaProperties.put("sasl.mechanism", config.valueOf("sasl.mechanism"));
-        kafkaProperties.put("max.poll.records", config.valueOf("max.poll.records"));
-        kafkaProperties.put("fetch.max.bytes", config.valueOf("fetch.max.bytes"));
-        kafkaProperties.put("request.timeout.ms", config.valueOf("request.timeout.ms"));
-        kafkaProperties.put("max.poll.interval.ms", config.valueOf("max.poll.interval.ms"));
-        kafkaProperties.put("useMockKafkaConsumer", config.valueOf("useMockKafkaConsumer"));
+        kafkaProperties.put("bootstrap.servers", kafkaConfig.bootstrapServers());
+        kafkaProperties.put("auto.offset.reset", kafkaConfig.autoOffsetReset());
+        kafkaProperties.put("enable.auto.commit", kafkaConfig.enableAutoCommit());
+        kafkaProperties.put("group.id", kafkaConfig.groupId());
+        kafkaProperties.put("security.protocol", kafkaConfig.securityProtocol());
+        kafkaProperties.put("sasl.mechanism", kafkaConfig.saslMechanism());
+        kafkaProperties.put("max.poll.records", kafkaConfig.maxPollRecords());
+        kafkaProperties.put("fetch.max.bytes", kafkaConfig.fetchMaxBytes());
+        kafkaProperties.put("request.timeout.ms", kafkaConfig.requestTimeoutMs());
+        kafkaProperties.put("max.poll.interval.ms", kafkaConfig.maxPollIntervalMs());
         try (
                 KafkaReader kafkaReader = createKafkaReader(
                         kafkaProperties, queueTopic, callbackFunction, useMockKafkaConsumer

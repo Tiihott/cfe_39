@@ -46,7 +46,9 @@
 package com.teragrep.cfe_39;
 
 import com.teragrep.cfe_39.avro.SyslogRecord;
-import com.teragrep.cfe_39.configuration.ConfigurationImpl;
+import com.teragrep.cfe_39.configuration.NewCommonConfiguration;
+import com.teragrep.cfe_39.configuration.NewHdfsConfiguration;
+import com.teragrep.cfe_39.configuration.NewKafkaConfiguration;
 import com.teragrep.cfe_39.consumers.kafka.BatchDistributionImpl;
 import com.teragrep.cfe_39.consumers.kafka.ReadCoordinator;
 import com.teragrep.cfe_39.metrics.DurationStatistics;
@@ -74,27 +76,64 @@ public class KafkaConsumerTest {
 
     private static MiniDFSCluster hdfsCluster;
     private static File baseDir;
-    private static ConfigurationImpl config;
+    private static NewCommonConfiguration config;
+    private static NewHdfsConfiguration hdfsConfig;
+    private static NewKafkaConfiguration kafkaConfig;
     private FileSystem fs;
 
     // Prepares known state for testing.
     @BeforeEach
     public void startMiniCluster() {
         assertDoesNotThrow(() -> {
-            // Set system properties to use the valid configuration with skipping of broken records disabled.
-            System
-                    .setProperty("cfe_39.config.location", System.getProperty("user.dir") + "/src/test/resources/valid.application.properties");
-            config = new ConfigurationImpl();
-            config
-                    .load(System.getProperty("cfe_39.config.location", "/opt/teragrep/cfe_39/etc/application.properties"));
+            Map<String, String> map = new HashMap<>();
+            map.put("log4j2.configurationFile", "/opt/teragrep/cfe_39/etc/log4j2.properties");
+            map.put("egress.configurationFile", "/opt/teragrep/cfe_39/etc/egress.properties");
+            map.put("ingress.configurationFile", "/opt/teragrep/cfe_39/etc/ingress.properties");
+            map.put("queueDirectory", System.getProperty("user.dir") + "/etc/AVRO/");
+            map.put("maximumFileSize", "30000");
+            map.put("queueTopicPattern", "^testConsumerTopic-*$");
+            map.put("numOfConsumers", "2");
+            map.put("skipNonRFC5424Records", "true");
+            map.put("skipEmptyRFC5424Records", "true");
+            map.put("pruneOffset", "157784760000");
+            map.put("consumerTimeout", "600000");
+            config = new NewCommonConfiguration(map);
+
             // Create a HDFS miniCluster
             baseDir = Files.createTempDirectory("test_hdfs").toFile().getAbsoluteFile();
-            hdfsCluster = new TestMiniClusterFactory().create(config, baseDir);
-            config.with("hdfsuri", "hdfs://localhost:" + hdfsCluster.getNameNodePort() + "/");
-            config.with("maximumFileSize", "30000");
-            config.with("queueDirectory", System.getProperty("user.dir") + "/etc/AVRO/");
-            config.with("hadoop.security.authentication", "false");
-            fs = new TestFileSystemFactory().create(config.valueOf("hdfsuri"));
+            hdfsCluster = new TestMiniClusterFactory().create(baseDir);
+            Map<String, String> hdfsMap = new HashMap<>();
+            hdfsMap.put("pruneOffset", "157784760000");
+            hdfsMap.put("hdfsuri", "hdfs://localhost:" + hdfsCluster.getNameNodePort() + "/");
+            hdfsMap.put("hdfsPath", "hdfs:///opt/teragrep/cfe_39/srv/");
+            hdfsMap.put("java.security.krb5.kdc", "test");
+            hdfsMap.put("java.security.krb5.realm", "test");
+            hdfsMap.put("hadoop.security.authentication", "false");
+            hdfsMap.put("hadoop.security.authorization", "test");
+            hdfsMap.put("dfs.namenode.kerberos.principal.pattern", "test");
+            hdfsMap.put("KerberosKeytabUser", "test");
+            hdfsMap.put("KerberosKeytabPath", "test");
+            hdfsMap.put("dfs.client.use.datanode.hostname", "false");
+            hdfsMap.put("hadoop.kerberos.keytab.login.autorenewal.enabled", "true");
+            hdfsMap.put("dfs.data.transfer.protection", "test");
+            hdfsMap.put("dfs.encrypt.data.transfer.cipher.suites", "test");
+            hdfsConfig = new NewHdfsConfiguration(hdfsMap);
+            fs = new TestFileSystemFactory().create(hdfsConfig.hdfsUri());
+
+            Map<String, String> kafkaMap = new HashMap<>();
+            kafkaMap.put("java.security.auth.login.config", "/opt/teragrep/cfe_39/etc/config.jaas");
+            kafkaMap.put("bootstrap.servers", "test");
+            kafkaMap.put("auto.offset.reset", "earliest");
+            kafkaMap.put("enable.auto.commit", "false");
+            kafkaMap.put("group.id", "cfe_39");
+            kafkaMap.put("security.protocol", "SASL_PLAINTEXT");
+            kafkaMap.put("sasl.mechanism", "PLAIN");
+            kafkaMap.put("max.poll.records", "500");
+            kafkaMap.put("fetch.max.bytes", "1073741820");
+            kafkaMap.put("request.timeout.ms", "300000");
+            kafkaMap.put("max.poll.interval.ms", "300000");
+            kafkaMap.put("useMockKafkaConsumer", "true");
+            kafkaConfig = new NewKafkaConfiguration(kafkaMap);
         });
     }
 
@@ -117,12 +156,14 @@ public class KafkaConsumerTest {
             // BatchDistributionImpl can not be used as a functional interface.
             BatchDistributionImpl output1 = new BatchDistributionImpl(
                     config, // Configuration settings
+                    hdfsConfig,
                     "topicName", // String, the name of the topic
                     durationStatistics, // RuntimeStatistics object from metrics
                     new TopicCounter("topicName") // TopicCounter object from metrics
             );
             BatchDistributionImpl output2 = new BatchDistributionImpl(
                     config, // Configuration settings
+                    hdfsConfig,
                     "topicName", // String, the name of the topic
                     durationStatistics, // RuntimeStatistics object from metrics
                     new TopicCounter("topicName") // TopicCounter object from metrics
@@ -131,6 +172,8 @@ public class KafkaConsumerTest {
             ReadCoordinator readCoordinator = new ReadCoordinator(
                     "testConsumerTopic",
                     config,
+                    kafkaConfig,
+                    hdfsConfig,
                     output1,
                     hdfsStartOffsets
             );
@@ -140,6 +183,8 @@ public class KafkaConsumerTest {
             ReadCoordinator readCoordinator2 = new ReadCoordinator(
                     "testConsumerTopic",
                     config,
+                    kafkaConfig,
+                    hdfsConfig,
                     output2,
                     hdfsStartOffsets
             );
@@ -156,7 +201,7 @@ public class KafkaConsumerTest {
                 filenameList.add("testConsumerTopic" + i + "." + 1);
             }
             for (String fileName : filenameList) {
-                String path2 = config.valueOf("queueDirectory") + "/" + fileName;
+                String path2 = config.queueDirectory() + "/" + fileName;
                 File avroFile = new File(path2);
                 Assertions.assertTrue(filenameList.contains(avroFile.getName()));
                 DatumReader<SyslogRecord> datumReader = new SpecificDatumReader<>(SyslogRecord.class);
@@ -184,6 +229,7 @@ public class KafkaConsumerTest {
             // BatchDistributionImpl can not be used as a functional interface.
             BatchDistributionImpl output = new BatchDistributionImpl(
                     config, // Configuration settings
+                    hdfsConfig,
                     "topicName", // String, the name of the topic
                     durationStatistics, // RuntimeStatistics object from metrics
                     new TopicCounter("topicName") // TopicCounter object from metrics
@@ -192,6 +238,8 @@ public class KafkaConsumerTest {
             ReadCoordinator readCoordinator = new ReadCoordinator(
                     "testConsumerTopic",
                     config,
+                    kafkaConfig,
+                    hdfsConfig,
                     output,
                     hdfsStartOffsets
             );
@@ -208,7 +256,7 @@ public class KafkaConsumerTest {
                 filenameList.add("testConsumerTopic" + i + "." + 1);
             }
             for (String fileName : filenameList) {
-                String path2 = config.valueOf("queueDirectory") + "/" + fileName;
+                String path2 = config.queueDirectory() + "/" + fileName;
                 File avroFile = new File(path2);
                 Assertions.assertTrue(filenameList.contains(avroFile.getName()));
                 DatumReader<SyslogRecord> datumReader = new SpecificDatumReader<>(SyslogRecord.class);

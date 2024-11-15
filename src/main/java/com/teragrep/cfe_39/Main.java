@@ -45,33 +45,70 @@
  */
 package com.teragrep.cfe_39;
 
-import com.teragrep.cfe_39.configuration.ConfigurationImpl;
+import com.teragrep.cfe_39.configuration.NewCommonConfiguration;
+import com.teragrep.cfe_39.configuration.NewHdfsConfiguration;
+import com.teragrep.cfe_39.configuration.NewKafkaConfiguration;
 import com.teragrep.cfe_39.consumers.kafka.HdfsDataIngestion;
+import com.teragrep.cnf_01.ConfigurationException;
+import com.teragrep.cnf_01.PathConfiguration;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Map;
 
 public final class Main {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args) throws Exception {
-        ConfigurationImpl config = new ConfigurationImpl();
+        // NewCommonConfiguration
+        final PathConfiguration pathConfiguration = new PathConfiguration(
+                System.getProperty("cfe_39.config.location", "/opt/teragrep/cfe_39/etc/application.properties")
+        );
+        final Map<String, String> map;
         try {
-            config
-                    .load(System.getProperty("cfe_39.config.location", "/opt/teragrep/cfe_39/etc/application.properties"));
+            map = pathConfiguration.asMap();
         }
-        catch (IOException e) {
-            LOGGER.error("Can't load config: ", e);
-            System.exit(1);
+        catch (ConfigurationException e) {
+            LOGGER.error("Failed to create PathConfiguration: <{}>", e.getMessage());
+            throw e;
         }
-        catch (IllegalArgumentException e) {
-            LOGGER.error("Got invalid config: ", e);
-            System.exit(1);
+        NewCommonConfiguration commonConfig = new NewCommonConfiguration(map);
+
+        // log4j2 configuration
+        Path log4j2Config = Paths
+                .get(commonConfig.log4j2ConfigurationFile(), System.getProperty("user.dir") + "/rpm/resources/log4j2.properties");
+        Configurator.reconfigure(log4j2Config.toUri());
+
+        // NewKafkaConfiguration
+        final PathConfiguration kafkaPathConfiguration = new PathConfiguration(commonConfig.egressConfigurationFile());
+        final Map<String, String> kafkaMap;
+        try {
+            kafkaMap = kafkaPathConfiguration.asMap();
         }
+        catch (ConfigurationException e) {
+            LOGGER.error("Failed to create PathConfiguration: <{}>", e.getMessage());
+            throw e;
+        }
+        NewKafkaConfiguration kafkaConfig = new NewKafkaConfiguration(kafkaMap);
+
+        // NewHdfsConfiguration
+        final PathConfiguration hdfsPathConfiguration = new PathConfiguration(commonConfig.ingressConfigurationFile());
+        final Map<String, String> hdfsMap;
+        try {
+            hdfsMap = hdfsPathConfiguration.asMap();
+        }
+        catch (ConfigurationException e) {
+            LOGGER.error("Failed to create PathConfiguration: <{}>", e.getMessage());
+            throw e;
+        }
+        NewHdfsConfiguration hdfsConfig = new NewHdfsConfiguration(hdfsMap);
+
         LOGGER.info("Running main program");
-        HdfsDataIngestion hdfsDataIngestion = new HdfsDataIngestion(config);
+        HdfsDataIngestion hdfsDataIngestion = new HdfsDataIngestion(commonConfig, hdfsConfig, kafkaConfig);
         hdfsDataIngestion.run();
     }
 }

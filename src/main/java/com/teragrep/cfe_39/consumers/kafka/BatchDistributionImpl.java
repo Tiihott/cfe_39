@@ -46,7 +46,8 @@
 package com.teragrep.cfe_39.consumers.kafka;
 
 import com.google.gson.*;
-import com.teragrep.cfe_39.configuration.ConfigurationImpl;
+import com.teragrep.cfe_39.configuration.NewCommonConfiguration;
+import com.teragrep.cfe_39.configuration.NewHdfsConfiguration;
 import com.teragrep.cfe_39.metrics.topic.TopicCounter;
 import com.teragrep.cfe_39.metrics.DurationStatistics;
 import org.slf4j.Logger;
@@ -69,16 +70,19 @@ public final class BatchDistributionImpl implements BatchDistribution {
     private final DurationStatistics durationStatistics;
     private final TopicCounter topicCounter;
     private long lastTimeCalled;
-    private final ConfigurationImpl config;
+    private final NewCommonConfiguration config;
+    private final NewHdfsConfiguration hdfsConfig;
     private final Map<String, PartitionFileImpl> partitionFileMap;
 
     public BatchDistributionImpl(
-            ConfigurationImpl config,
+            NewCommonConfiguration config,
+            NewHdfsConfiguration hdfsConfig,
             String topic,
             DurationStatistics durationStatistics,
             TopicCounter topicCounter
     ) {
         this.config = config;
+        this.hdfsConfig = hdfsConfig;
         this.topic = topic;
         this.durationStatistics = durationStatistics;
         this.topicCounter = topicCounter;
@@ -114,7 +118,7 @@ public final class BatchDistributionImpl implements BatchDistribution {
             if (!partitionFileMap.containsKey(recordOffset.get("partition").getAsString())) {
                 try {
                     partitionFileMap
-                            .put(recordOffset.get("partition").getAsString(), new PartitionFileImpl(config, recordOffset));
+                            .put(recordOffset.get("partition").getAsString(), new PartitionFileImpl(config, hdfsConfig, recordOffset));
                 }
                 catch (IOException e) {
                     LOGGER.error("Failed to create new PartitionFileImpl for record <{}>", recordOffset);

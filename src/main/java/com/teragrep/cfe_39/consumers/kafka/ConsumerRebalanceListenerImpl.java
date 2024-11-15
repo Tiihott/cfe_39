@@ -45,7 +45,7 @@
  */
 package com.teragrep.cfe_39.consumers.kafka;
 
-import com.teragrep.cfe_39.configuration.ConfigurationImpl;
+import com.teragrep.cfe_39.configuration.NewHdfsConfiguration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
@@ -64,12 +64,12 @@ public final class ConsumerRebalanceListenerImpl implements ConsumerRebalanceLis
 
     private final Consumer<byte[], byte[]> kafkaConsumer;
     private final BatchDistributionImpl callbackFunction;
-    private final ConfigurationImpl config;
+    private final NewHdfsConfiguration config;
 
     public ConsumerRebalanceListenerImpl(
             Consumer<byte[], byte[]> kafkaConsumer,
             BatchDistributionImpl callbackFunction,
-            ConfigurationImpl config
+            NewHdfsConfiguration config
     ) {
         this.kafkaConsumer = kafkaConsumer;
         this.callbackFunction = callbackFunction;

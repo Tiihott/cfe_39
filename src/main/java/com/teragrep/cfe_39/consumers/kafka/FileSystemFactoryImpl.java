@@ -45,7 +45,7 @@
  */
 package com.teragrep.cfe_39.consumers.kafka;
 
-import com.teragrep.cfe_39.configuration.ConfigurationImpl;
+import com.teragrep.cfe_39.configuration.NewHdfsConfiguration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
@@ -58,61 +58,53 @@ import java.net.URI;
 public final class FileSystemFactoryImpl implements FileSystemFactory {
 
     private final HdfsConfiguration conf;
-    private final ConfigurationImpl configuration;
+    private final NewHdfsConfiguration configuration;
 
-    public FileSystemFactoryImpl(ConfigurationImpl configuration) {
+    public FileSystemFactoryImpl(NewHdfsConfiguration configuration) {
         this.conf = new HdfsConfiguration();
         this.configuration = configuration;
     }
 
     public FileSystem create(boolean initializeUGI) throws IOException {
         FileSystem fs;
-        if ("kerberos".equals(configuration.valueOf("hadoop.security.authentication"))) {
+        if ("kerberos".equals(configuration.hadoopSecurityAuthentication())) {
             // Initializing the FileSystem with kerberos.
-            String hdfsuri = configuration.valueOf("hdfsuri"); // Get from config.
+            String hdfsuri = configuration.hdfsUri(); // Get from config.
             // set kerberos host and realm
-            System.setProperty("java.security.krb5.realm", configuration.valueOf("java.security.krb5.realm"));
-            System.setProperty("java.security.krb5.kdc", configuration.valueOf("java.security.krb5.kdc"));
+            System.setProperty("java.security.krb5.realm", configuration.javaSecurityKrb5Realm());
+            System.setProperty("java.security.krb5.kdc", configuration.javaSecurityKrb5Kdc());
             conf.clear();
             // enable kerberus
-            conf.set("hadoop.security.authentication", configuration.valueOf("hadoop.security.authentication"));
-            conf.set("hadoop.security.authorization", configuration.valueOf("hadoop.security.authorization"));
+            conf.set("hadoop.security.authentication", configuration.hadoopSecurityAuthentication());
+            conf.set("hadoop.security.authorization", configuration.hadoopSecurityAuthorization());
             conf
                     .set(
                             "hadoop.kerberos.keytab.login.autorenewal.enabled",
-                            configuration.valueOf("hadoop.kerberos.keytab.login.autorenewal.enabled")
+                            configuration.hadoopKerberosKeytabLoginAutorenewalEnabled()
                     );
             conf.set("fs.defaultFS", hdfsuri); // Set FileSystem URI
             conf.set("fs.hdfs.impl", DistributedFileSystem.class.getName()); // Maven stuff?
             conf.set("fs.file.impl", LocalFileSystem.class.getName()); // Maven stuff?
             /* hack for running locally with fake DNS records
              set this to true if overriding the host name in /etc/hosts*/
-            conf.set("dfs.client.use.datanode.hostname", configuration.valueOf("dfs.client.use.datanode.hostname"));
+            conf.set("dfs.client.use.datanode.hostname", configuration.dfsClientUseDatanodeHostname());
             /* server principal
              the kerberos principle that the namenode is using*/
-            conf
-                    .set(
-                            "dfs.namenode.kerberos.principal.pattern",
-                            configuration.valueOf("dfs.namenode.kerberos.principal.pattern")
-                    );
+            conf.set("dfs.namenode.kerberos.principal.pattern", configuration.dfsNamenodeKerberosPrincipalPattern());
             // set sasl
-            conf.set("dfs.data.transfer.protection", configuration.valueOf("dfs.data.transfer.protection"));
-            conf
-                    .set(
-                            "dfs.encrypt.data.transfer.cipher.suites",
-                            configuration.valueOf("dfs.encrypt.data.transfer.cipher.suites")
-                    );
+            conf.set("dfs.data.transfer.protection", configuration.dfsDataTransferProtection());
+            conf.set("dfs.encrypt.data.transfer.cipher.suites", configuration.dfsEncryptDataTransferCipherSuites());
             if (initializeUGI) {
                 UserGroupInformation.setConfiguration(conf);
                 UserGroupInformation
-                        .loginUserFromKeytab(configuration.valueOf("KerberosKeytabUser"), configuration.valueOf("KerberosKeytabPath"));
+                        .loginUserFromKeytab(configuration.KerberosKeytabUser(), configuration.KerberosKeytabPath());
             }
             // filesystem for HDFS access is set here
             fs = FileSystem.get(conf);
         }
         else {
             // Initializing the FileSystem with minicluster.
-            String hdfsuri = configuration.valueOf("hdfsuri");
+            String hdfsuri = configuration.hdfsUri();
             // ====== Init HDFS File System Object
             conf.clear();
             // Set FileSystem URI
