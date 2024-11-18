@@ -70,9 +70,8 @@ public final class BatchDistributionImpl implements BatchDistribution {
     private final DurationStatistics durationStatistics;
     private final TopicCounter topicCounter;
     private long lastTimeCalled;
-    private final CommonConfiguration config;
-    private final HdfsConfiguration hdfsConfig;
     private final Map<String, PartitionFileImpl> partitionFileMap;
+    private final PartitionFileFactory partitionFileFactory;
 
     public BatchDistributionImpl(
             CommonConfiguration config,
@@ -81,13 +80,30 @@ public final class BatchDistributionImpl implements BatchDistribution {
             DurationStatistics durationStatistics,
             TopicCounter topicCounter
     ) {
-        this.config = config;
-        this.hdfsConfig = hdfsConfig;
+        this(
+                topic,
+                durationStatistics,
+                topicCounter,
+                new HashMap<>(),
+                Instant.now().toEpochMilli(),
+                new PartitionFileFactory(config, hdfsConfig)
+        );
+    }
+
+    public BatchDistributionImpl(
+            String topic,
+            DurationStatistics durationStatistics,
+            TopicCounter topicCounter,
+            Map<String, PartitionFileImpl> partitionFileMap,
+            long lastTimeCalled,
+            PartitionFileFactory partitionFileFactory
+    ) {
         this.topic = topic;
         this.durationStatistics = durationStatistics;
         this.topicCounter = topicCounter;
-        this.partitionFileMap = new HashMap<>();
-        this.lastTimeCalled = Instant.now().toEpochMilli();
+        this.partitionFileMap = partitionFileMap;
+        this.lastTimeCalled = lastTimeCalled;
+        this.partitionFileFactory = partitionFileFactory;
     }
 
     /* Input parameter is a batch of RecordOffsetObjects from kafka. Each object contains a record and its metadata (topic, partition and offset).
@@ -118,7 +134,7 @@ public final class BatchDistributionImpl implements BatchDistribution {
             if (!partitionFileMap.containsKey(recordOffset.get("partition").getAsString())) {
                 try {
                     partitionFileMap
-                            .put(recordOffset.get("partition").getAsString(), new PartitionFileImpl(config, hdfsConfig, recordOffset));
+                            .put(recordOffset.get("partition").getAsString(), partitionFileFactory.partitionFor(recordOffset));
                 }
                 catch (IOException e) {
                     LOGGER.error("Failed to create new PartitionFileImpl for record <{}>", recordOffset);
