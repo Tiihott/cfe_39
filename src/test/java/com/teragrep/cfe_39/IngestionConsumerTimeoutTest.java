@@ -88,7 +88,6 @@ public class IngestionConsumerTimeoutTest {
             map.put("egress.configurationFile", "/opt/teragrep/cfe_39/etc/egress.properties");
             map.put("ingress.configurationFile", "/opt/teragrep/cfe_39/etc/ingress.properties");
             map.put("queueDirectory", System.getProperty("user.dir") + "/etc/AVRO/");
-            map.put("maximumFileSize", "3000000");
             map.put("queueTopicPattern", "^testConsumerTopic-*$");
             map.put("numOfConsumers", "2");
             map.put("skipNonRFC5424Records", "true");
@@ -115,6 +114,7 @@ public class IngestionConsumerTimeoutTest {
             hdfsMap.put("hadoop.kerberos.keytab.login.autorenewal.enabled", "true");
             hdfsMap.put("dfs.data.transfer.protection", "test");
             hdfsMap.put("dfs.encrypt.data.transfer.cipher.suites", "test");
+            hdfsMap.put("maximumFileSize", "3000000");
             hdfsConfig = new HdfsConfiguration(hdfsMap);
             fs = new TestFileSystemFactory().create(hdfsConfig.hdfsUri());
 
@@ -155,7 +155,7 @@ public class IngestionConsumerTimeoutTest {
         assertDoesNotThrow(() -> {
             Assertions.assertTrue(hdfsConfig.pruneOffset() >= 300000L); // Fails the test if the config is not correct.
             Assertions.assertEquals(1000, config.consumerTimeout());
-            Assertions.assertEquals(3000000, config.maximumFileSize());
+            Assertions.assertEquals(3000000, hdfsConfig.maximumFileSize());
             Assertions.assertFalse(fs.exists(new Path(hdfsConfig.hdfsPath() + "/" + "testConsumerTopic")));
             HdfsDataIngestion hdfsDataIngestion = new HdfsDataIngestion(config, hdfsConfig, kafkaConfig);
             hdfsDataIngestion.run();

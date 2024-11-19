@@ -69,7 +69,6 @@ public final class PartitionFileFactory {
         );
         return new PartitionFileImpl(
                 uniqueFileCreated.getNextWritableFile(),
-                config,
                 hdfsConfig,
                 recordOffset,
                 new PartitionRecordsImpl(config)

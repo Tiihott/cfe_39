@@ -223,4 +223,29 @@ public final class HdfsConfiguration {
         }
     }
 
+    public long maximumFileSize() {
+        final String numString = config.get("maximumFileSize");
+        if (numString == null) {
+            throw new ConfigurationException("Configuration error. <maximumFileSize> must be set.");
+        }
+        else {
+            final long maximumFileSize;
+            try {
+                maximumFileSize = Long.parseLong(numString);
+            }
+            catch (NumberFormatException e) {
+                LOGGER.error("Configuration error. Invalid value for <maximumFileSize>: <{}>", e.getMessage());
+                throw new RuntimeException(e);
+            }
+            if (maximumFileSize <= 0) {
+                throw new ConfigurationException(
+                        "Configuration error. <maximumFileSize> must be a positive long value."
+                );
+            }
+            else {
+                return maximumFileSize;
+            }
+        }
+    }
+
 }

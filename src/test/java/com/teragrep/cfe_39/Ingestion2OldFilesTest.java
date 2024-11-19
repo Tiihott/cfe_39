@@ -89,7 +89,6 @@ public class Ingestion2OldFilesTest {
             map.put("egress.configurationFile", "/opt/teragrep/cfe_39/etc/egress.properties");
             map.put("ingress.configurationFile", "/opt/teragrep/cfe_39/etc/ingress.properties");
             map.put("queueDirectory", System.getProperty("user.dir") + "/etc/AVRO/");
-            map.put("maximumFileSize", "30000");
             map.put("queueTopicPattern", "^testConsumerTopic-*$");
             map.put("numOfConsumers", "2");
             map.put("skipNonRFC5424Records", "true");
@@ -116,6 +115,7 @@ public class Ingestion2OldFilesTest {
             hdfsMap.put("hadoop.kerberos.keytab.login.autorenewal.enabled", "true");
             hdfsMap.put("dfs.data.transfer.protection", "test");
             hdfsMap.put("dfs.encrypt.data.transfer.cipher.suites", "test");
+            hdfsMap.put("maximumFileSize", "30000");
             hdfsConfig = new HdfsConfiguration(hdfsMap);
             fs = new TestFileSystemFactory().create(hdfsConfig.hdfsUri());
 

@@ -47,7 +47,6 @@ package com.teragrep.cfe_39.consumers.kafka;
 
 import com.google.gson.JsonObject;
 import com.teragrep.cfe_39.avro.SyslogRecord;
-import com.teragrep.cfe_39.configuration.CommonConfiguration;
 import com.teragrep.cfe_39.configuration.HdfsConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +61,6 @@ public final class PartitionFileImpl implements PartitionFile {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartitionFileImpl.class);
 
     private final JsonObject topicPartition;
-    private final CommonConfiguration config;
     private final HdfsConfiguration hdfsConfig;
     private final File syslogFile;
     private final List<Long> batchOffsets;
@@ -70,24 +68,21 @@ public final class PartitionFileImpl implements PartitionFile {
 
     PartitionFileImpl(
             File file,
-            CommonConfiguration config,
             HdfsConfiguration hdfsConfig,
             JsonObject topicPartition,
             PartitionRecordsImpl partitionRecords
     ) {
-        this(file, config, hdfsConfig, topicPartition, new ArrayList<>(), partitionRecords);
+        this(file, hdfsConfig, topicPartition, new ArrayList<>(), partitionRecords);
     }
 
     PartitionFileImpl(
             File syslogFile,
-            CommonConfiguration config,
             HdfsConfiguration hdfsConfig,
             JsonObject topicPartition,
             List<Long> batchOffsets,
             PartitionRecordsImpl partitionRecords
     ) {
         this.syslogFile = syslogFile;
-        this.config = config;
         this.hdfsConfig = hdfsConfig;
         this.topicPartition = topicPartition;
         this.batchOffsets = batchOffsets;
@@ -111,7 +106,7 @@ public final class PartitionFileImpl implements PartitionFile {
                 storedOffset = next.getOffset();
             }
             // When the file size has gone above the maximum, commit the file into HDFS using the latest topic/partition/offset values as the filename and then delete the local avro-file.
-            if (config.maximumFileSize() < syslogFile.length()) {
+            if (hdfsConfig.maximumFileSize() < syslogFile.length()) {
                 writeToHdfs(storedOffset);
             }
         }

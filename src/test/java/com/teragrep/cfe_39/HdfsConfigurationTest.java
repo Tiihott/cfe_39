@@ -70,7 +70,7 @@ public class HdfsConfigurationTest {
             hdfsMap = hdfsPathConfiguration.asMap();
             Assertions
                     .assertEquals(
-                            "{pruneOffset=157784760000, hdfsuri=hdfs://localhost:45937/, dfs.namenode.kerberos.principal.pattern=test, hadoop.security.authentication=kerberos, dfs.encrypt.data.transfer.cipher.suites=test, java.security.krb5.kdc=test, KerberosKeytabPath=test, dfs.data.transfer.protection=test, dfs.client.use.datanode.hostname=false, hadoop.kerberos.keytab.login.autorenewal.enabled=true, KerberosKeytabUser=test, java.security.krb5.realm=test, hadoop.security.authorization=test, hdfsPath=hdfs:///opt/teragrep/cfe_39/srv/}",
+                            "{pruneOffset=157784760000, hdfsuri=hdfs://localhost:45937/, dfs.namenode.kerberos.principal.pattern=test, hadoop.security.authentication=kerberos, dfs.encrypt.data.transfer.cipher.suites=test, java.security.krb5.kdc=test, maximumFileSize=3000, KerberosKeytabPath=test, dfs.data.transfer.protection=test, dfs.client.use.datanode.hostname=false, hadoop.kerberos.keytab.login.autorenewal.enabled=true, KerberosKeytabUser=test, java.security.krb5.realm=test, hadoop.security.authorization=test, hdfsPath=hdfs:///opt/teragrep/cfe_39/srv/}",
                             hdfsMap.toString()
                     );
             HdfsConfiguration hdfsConfig = new HdfsConfiguration(hdfsMap);
@@ -90,6 +90,7 @@ public class HdfsConfigurationTest {
             Assertions.assertEquals("true", hdfsConfig.hadoopKerberosKeytabLoginAutorenewalEnabled());
             Assertions.assertEquals("test", hdfsConfig.dfsDataTransferProtection());
             Assertions.assertEquals("test", hdfsConfig.dfsEncryptDataTransferCipherSuites());
+            Assertions.assertEquals(3000, hdfsConfig.maximumFileSize());
         });
     }
 }
