@@ -48,6 +48,7 @@ package com.teragrep.cfe_39.consumers.kafka;
 import com.google.gson.JsonObject;
 import com.teragrep.cfe_39.configuration.CommonConfiguration;
 import com.teragrep.cfe_39.configuration.HdfsConfiguration;
+import com.teragrep.cfe_39.consumers.kafka.queue.UniqueFileCreated;
 
 import java.io.IOException;
 
@@ -62,6 +63,16 @@ public final class PartitionFileFactory {
     }
 
     public PartitionFileImpl partitionFor(JsonObject recordOffset) throws IOException {
-        return new PartitionFileImpl(config, hdfsConfig, recordOffset);
+        UniqueFileCreated uniqueFileCreated = new UniqueFileCreated(
+                config.queueDirectory(),
+                recordOffset.get("topic").getAsString() + recordOffset.get("partition").getAsString()
+        );
+        return new PartitionFileImpl(
+                uniqueFileCreated.getNextWritableFile(),
+                config,
+                hdfsConfig,
+                recordOffset,
+                new PartitionRecordsImpl(config)
+        );
     }
 }

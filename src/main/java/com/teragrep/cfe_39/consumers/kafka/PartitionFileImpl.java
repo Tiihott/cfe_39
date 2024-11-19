@@ -49,7 +49,6 @@ import com.google.gson.JsonObject;
 import com.teragrep.cfe_39.avro.SyslogRecord;
 import com.teragrep.cfe_39.configuration.CommonConfiguration;
 import com.teragrep.cfe_39.configuration.HdfsConfiguration;
-import com.teragrep.cfe_39.consumers.kafka.queue.UniqueFileCreated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,25 +68,30 @@ public final class PartitionFileImpl implements PartitionFile {
     private final List<Long> batchOffsets;
     private final PartitionRecordsImpl partitionRecords;
 
-    PartitionFileImpl(CommonConfiguration config, HdfsConfiguration hdfsConfig, JsonObject topicPartition)
-            throws IOException {
-        UniqueFileCreated uniqueFileCreated = new UniqueFileCreated(
-                config.queueDirectory(),
-                topicPartition.get("topic").getAsString() + topicPartition.get("partition").getAsString()
-        );
-        this.syslogFile = uniqueFileCreated.getNextWritableFile();
+    PartitionFileImpl(
+            File file,
+            CommonConfiguration config,
+            HdfsConfiguration hdfsConfig,
+            JsonObject topicPartition,
+            PartitionRecordsImpl partitionRecords
+    ) {
+        this(file, config, hdfsConfig, topicPartition, new ArrayList<>(), partitionRecords);
+    }
+
+    PartitionFileImpl(
+            File syslogFile,
+            CommonConfiguration config,
+            HdfsConfiguration hdfsConfig,
+            JsonObject topicPartition,
+            List<Long> batchOffsets,
+            PartitionRecordsImpl partitionRecords
+    ) {
+        this.syslogFile = syslogFile;
         this.config = config;
         this.hdfsConfig = hdfsConfig;
         this.topicPartition = topicPartition;
-        this.batchOffsets = new ArrayList<>();
-        this.partitionRecords = new PartitionRecordsImpl(config);
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER
-                    .debug(
-                            "PartitionFileImpl representing topic {} partition {} initialized successfully. syslogFile path allocated to the object is {}",
-                            topicPartition.get("topic").getAsString(), topicPartition.get("partition").getAsString(), syslogFile.getPath()
-                    );
-        }
+        this.batchOffsets = batchOffsets;
+        this.partitionRecords = partitionRecords;
     }
 
     @Override
