@@ -70,7 +70,7 @@ public class KafkaConfigurationTest {
             kafkaMap = kafkaPathConfiguration.asMap();
             Assertions
                     .assertEquals(
-                            "{java.security.auth.login.config=/opt/teragrep/cfe_39/etc/config.jaas, security.protocol=SASL_PLAINTEXT, useMockKafkaConsumer=true, enable.auto.commit=false, max.poll.records=500, request.timeout.ms=300000, sasl.mechanism=PLAIN, group.id=cfe_39, bootstrap.servers=test, fetch.max.bytes=1073741820, max.poll.interval.ms=300000, auto.offset.reset=earliest}",
+                            "{java.security.auth.login.config=/opt/teragrep/cfe_39/etc/config.jaas, numOfConsumers=2, useMockKafkaConsumer=true, max.poll.records=500, request.timeout.ms=300000, group.id=cfe_39, bootstrap.servers=test, security.protocol=SASL_PLAINTEXT, enable.auto.commit=false, sasl.mechanism=PLAIN, fetch.max.bytes=1073741820, max.poll.interval.ms=300000, auto.offset.reset=earliest}",
                             kafkaMap.toString()
                     );
             KafkaConfiguration kafkaConfig = new KafkaConfiguration(kafkaMap);
@@ -88,6 +88,7 @@ public class KafkaConfigurationTest {
             Assertions.assertEquals(300000, kafkaConfig.requestTimeoutMs());
             Assertions.assertEquals(300000, kafkaConfig.maxPollIntervalMs());
             Assertions.assertTrue(kafkaConfig.useMockKafkaConsumer());
+            Assertions.assertEquals(2, kafkaConfig.numOfConsumers());
 
         });
     }

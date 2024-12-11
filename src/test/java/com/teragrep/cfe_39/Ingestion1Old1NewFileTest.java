@@ -90,7 +90,6 @@ public class Ingestion1Old1NewFileTest {
             map.put("ingress.configurationFile", "/opt/teragrep/cfe_39/etc/ingress.properties");
             map.put("queueDirectory", System.getProperty("user.dir") + "/etc/AVRO/");
             map.put("queueTopicPattern", "^testConsumerTopic-*$");
-            map.put("numOfConsumers", "2");
             map.put("skipNonRFC5424Records", "true");
             map.put("skipEmptyRFC5424Records", "true");
             map.put("pruneOffset", "157784760000");
@@ -132,6 +131,7 @@ public class Ingestion1Old1NewFileTest {
             kafkaMap.put("request.timeout.ms", "300000");
             kafkaMap.put("max.poll.interval.ms", "300000");
             kafkaMap.put("useMockKafkaConsumer", "true");
+            kafkaMap.put("numOfConsumers", "2");
             kafkaConfig = new KafkaConfiguration(kafkaMap);
 
             // Inserts pre-made avro-files to HDFS where one file has new timestamp and other old, which are normally generated during data ingestion from mock kafka consumer.

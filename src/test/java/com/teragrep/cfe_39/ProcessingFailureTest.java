@@ -95,7 +95,6 @@ public class ProcessingFailureTest {
             map.put("ingress.configurationFile", "/opt/teragrep/cfe_39/etc/ingress.properties");
             map.put("queueDirectory", System.getProperty("user.dir") + "/etc/AVRO/");
             map.put("queueTopicPattern", "^testConsumerTopic-*$");
-            map.put("numOfConsumers", "2");
             map.put("skipNonRFC5424Records", "false");
             map.put("skipEmptyRFC5424Records", "false");
             map.put("pruneOffset", "157784760000");

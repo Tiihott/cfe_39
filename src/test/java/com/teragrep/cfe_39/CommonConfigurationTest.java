@@ -70,7 +70,7 @@ public class CommonConfigurationTest {
             map = pathConfiguration.asMap();
             Assertions
                     .assertEquals(
-                            "{numOfConsumers=2, queueTopicPattern=^testConsumerTopic-*$, queueDirectory=/opt/teragrep/cfe_39/etc/AVRO/, skipNonRFC5424Records=true, skipEmptyRFC5424Records=true, consumerTimeout=600000}",
+                            "{queueTopicPattern=^testConsumerTopic-*$, queueDirectory=/opt/teragrep/cfe_39/etc/AVRO/, skipNonRFC5424Records=true, skipEmptyRFC5424Records=true, consumerTimeout=600000}",
                             map.toString()
                     );
             CommonConfiguration commonConfig = new CommonConfiguration(map);
@@ -82,7 +82,6 @@ public class CommonConfigurationTest {
                     .assertEquals(System.getProperty("user.dir") + "/rpm/resources/ingress.properties", commonConfig.ingressConfigurationFile());
             Assertions
                     .assertEquals(System.getProperty("user.dir") + "/rpm/resources/log4j2.properties", commonConfig.log4j2ConfigurationFile());
-            Assertions.assertEquals(2, commonConfig.numOfConsumers());
             Assertions.assertEquals(600000, commonConfig.consumerTimeout());
             Assertions.assertTrue(commonConfig.skipNonRFC5424Records());
             Assertions.assertTrue(commonConfig.skipEmptyRFC5424Records());

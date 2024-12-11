@@ -84,29 +84,6 @@ public final class CommonConfiguration {
         return config.getOrDefault("queueTopicPattern", ".*");
     }
 
-    public int numOfConsumers() {
-        final String numString = config.get("numOfConsumers");
-        if (numString == null) {
-            throw new ConfigurationException("Configuration error. <numOfConsumers> must be set.");
-        }
-        else {
-            final int numOfConsumers;
-            try {
-                numOfConsumers = Integer.parseInt(numString);
-            }
-            catch (NumberFormatException e) {
-                LOGGER.error("Configuration error. Invalid value for <numOfConsumers>: <{}>", e.getMessage());
-                throw new RuntimeException(e);
-            }
-            if (numOfConsumers <= 0) {
-                throw new ConfigurationException("Configuration error. <numOfConsumers> must be a positive integer.");
-            }
-            else {
-                return numOfConsumers;
-            }
-        }
-    }
-
     public String queueDirectory() {
         return config.getOrDefault("queueDirectory", System.getProperty("user.dir") + "/rpm/resources/queue");
     }
