@@ -46,12 +46,15 @@
 package com.teragrep.cfe_39.consumers.kafka;
 
 import com.teragrep.cfe_39.avro.SyslogRecord;
+import org.apache.kafka.common.TopicPartition;
 
 public interface KafkaRecord {
 
     public abstract long size();
 
-    public abstract String offsetToJSON();
+    public abstract TopicPartition topicPartition();
+
+    public abstract long offset();
 
     public abstract SyslogRecord toSyslogRecord();
 }

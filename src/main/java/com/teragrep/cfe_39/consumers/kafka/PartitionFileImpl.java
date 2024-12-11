@@ -45,9 +45,9 @@
  */
 package com.teragrep.cfe_39.consumers.kafka;
 
-import com.google.gson.JsonObject;
 import com.teragrep.cfe_39.avro.SyslogRecord;
 import com.teragrep.cfe_39.configuration.HdfsConfiguration;
+import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +60,7 @@ public final class PartitionFileImpl implements PartitionFile {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PartitionFileImpl.class);
 
-    private final JsonObject topicPartition;
+    private final TopicPartition topicPartition;
     private final HdfsConfiguration hdfsConfig;
     private final File syslogFile;
     private final List<Long> batchOffsets;
@@ -69,7 +69,7 @@ public final class PartitionFileImpl implements PartitionFile {
     PartitionFileImpl(
             File file,
             HdfsConfiguration hdfsConfig,
-            JsonObject topicPartition,
+            TopicPartition topicPartition,
             PartitionRecordsImpl partitionRecords
     ) {
         this(file, hdfsConfig, topicPartition, new ArrayList<>(), partitionRecords);
@@ -78,7 +78,7 @@ public final class PartitionFileImpl implements PartitionFile {
     PartitionFileImpl(
             File syslogFile,
             HdfsConfiguration hdfsConfig,
-            JsonObject topicPartition,
+            TopicPartition topicPartition,
             List<Long> batchOffsets,
             PartitionRecordsImpl partitionRecords
     ) {
@@ -116,7 +116,7 @@ public final class PartitionFileImpl implements PartitionFile {
                 LOGGER
                         .debug(
                                 "Kafka Batch for topic {} partition {} processed successfully. Final record offset of the batch was {}.",
-                                topicPartition.get("topic").getAsString(), topicPartition.get("partition").getAsString(), storedOffset
+                                topicPartition.topic(), topicPartition.partition(), storedOffset
                         );
             }
             batchOffsets.add(storedOffset);
@@ -127,7 +127,7 @@ public final class PartitionFileImpl implements PartitionFile {
                 LOGGER
                         .debug(
                                 "Kafka Batch for topic {} partition {} was empty. Final record offset of the batch was {}. Proceeding to write the existing syslogFile to HDFS.",
-                                topicPartition.get("topic").getAsString(), topicPartition.get("partition").getAsString(), storedOffset
+                                topicPartition.topic(), topicPartition.partition(), storedOffset
                         );
             }
             writeToHdfsEarly();
@@ -147,7 +147,7 @@ public final class PartitionFileImpl implements PartitionFile {
             LOGGER
                     .debug(
                             "PartitionFileImpl-object representing topic {} partition {} was notified of consumer group rebalance. Deleting syslogFile allocated to the object at {}",
-                            topicPartition.get("topic").getAsString(), topicPartition.get("partition").getAsString(), syslogFile.getPath()
+                            topicPartition.topic(), topicPartition.partition(), syslogFile.getPath()
                     );
         }
         syslogFile.delete();
@@ -156,7 +156,12 @@ public final class PartitionFileImpl implements PartitionFile {
     // Writes the file to hdfs and initializes new file.
     private void writeToHdfs(long offset) throws IOException {
         try (
-                HDFSWrite writer = new HDFSWrite(hdfsConfig, topicPartition.get("topic").getAsString(), topicPartition.get("partition").getAsString(), offset)
+                HDFSWrite writer = new HDFSWrite(
+                        hdfsConfig,
+                        topicPartition.topic(),
+                        Integer.toString(topicPartition.partition()),
+                        offset
+                )
         ) {
             writer.commit(syslogFile); // commits the final AVRO-file to HDFS.
         }
@@ -166,7 +171,7 @@ public final class PartitionFileImpl implements PartitionFile {
             LOGGER
                     .debug(
                             "SyslogFile representing topic {} partition {} stored to HDFS with offset value of {}. SyslogFile allocated to the object located at {} has been deleted to prepare for storing new records.",
-                            topicPartition.get("topic").getAsString(), topicPartition.get("partition").getAsString(), offset, syslogFile.getPath()
+                            topicPartition.topic(), topicPartition.partition(), offset, syslogFile.getPath()
                     );
         }
     }

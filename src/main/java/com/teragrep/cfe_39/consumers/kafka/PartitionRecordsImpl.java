@@ -82,12 +82,16 @@ public final class PartitionRecordsImpl implements PartitionRecords {
                 if (config.skipNonRFC5424Records()) {
                     LOGGER
                             .warn(
-                                    "Skipping parsing a non RFC5424 record, record metadata: <{}>. Exception information: ",
-                                    next.offsetToJSON(), e
+                                    "Skipping parsing a non RFC5424 record, record topic partition: <{}> offset:<{}>. Exception information: ",
+                                    next.topicPartition(), next.offset(), e
                             );
                 }
                 else {
-                    LOGGER.error("Failed to parse RFC5424 record <{}>", next.offsetToJSON());
+                    LOGGER
+                            .error(
+                                    "Failed to parse RFC5424 record <{}> offset:<{}>", next.topicPartition(),
+                                    next.offset()
+                            );
                     throw new RuntimeException(e);
                 }
             }
@@ -95,12 +99,16 @@ public final class PartitionRecordsImpl implements PartitionRecords {
                 if (config.skipEmptyRFC5424Records()) {
                     LOGGER
                             .warn(
-                                    "Skipping parsing an empty RFC5424 record, record metadata: <{}>. Exception information: ",
-                                    next.offsetToJSON(), e
+                                    "Skipping parsing an empty RFC5424 record, record topic partition: <{}> offset:<{}>. Exception information: ",
+                                    next.topicPartition(), next.offset(), e
                             );
                 }
                 else {
-                    LOGGER.error("Failed to parse RFC5424 record <{}> because of null content", next.offsetToJSON());
+                    LOGGER
+                            .error(
+                                    "Failed to parse RFC5424 record <{}> offset:<{}> because of null content",
+                                    next.topicPartition(), next.offset()
+                            );
                     throw new RuntimeException(e);
                 }
             }

@@ -46,6 +46,7 @@
 package com.teragrep.cfe_39.consumers.kafka;
 
 import com.teragrep.cfe_39.avro.SyslogRecord;
+import org.apache.kafka.common.TopicPartition;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -76,9 +77,13 @@ public final class KafkaRecordImpl implements KafkaRecord {
     }
 
     @Override
-    public String offsetToJSON() {
-        return String
-                .format("{\"topic\":\"%s\", \"partition\":%d, \"offset\":%d}", this.topic, this.partition, this.offset);
+    public TopicPartition topicPartition() {
+        return new TopicPartition(topic, partition);
+    }
+
+    @Override
+    public long offset() {
+        return this.offset;
     }
 
     @Override

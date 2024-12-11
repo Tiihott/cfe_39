@@ -129,20 +129,20 @@ public final class BatchDistributionImpl implements BatchDistribution {
         ListIterator<KafkaRecordImpl> recordOffsetListIterator = batch.listIterator();
         while (recordOffsetListIterator.hasNext()) {
             KafkaRecordImpl next = recordOffsetListIterator.next();
-            JsonObject recordOffset = JsonParser.parseString(next.offsetToJSON()).getAsJsonObject();
             // If the PartitionFileImpl corresponding to the record's partition doesn't exist, create one.
-            if (!partitionFileMap.containsKey(recordOffset.get("partition").getAsString())) {
+            if (!partitionFileMap.containsKey(Integer.toString(next.topicPartition().partition()))) {
                 try {
                     partitionFileMap
-                            .put(recordOffset.get("partition").getAsString(), partitionFileFactory.partitionFor(recordOffset));
+                            .put(Integer.toString(next.topicPartition().partition()), partitionFileFactory.partitionFor(next.topicPartition()));
                 }
                 catch (IOException e) {
-                    LOGGER.error("Failed to create new PartitionFileImpl for record <{}>", recordOffset);
+                    LOGGER.error("Failed to create new PartitionFileImpl for record <{}>", next.topicPartition());
                     throw new RuntimeException(e);
                 }
             }
             // Every PartitionFileImpl object will hold responsibility over a single unique file that is related to a single topic partition.
-            PartitionFileImpl recordPartitionFile = partitionFileMap.get(recordOffset.get("partition").getAsString());
+            PartitionFileImpl recordPartitionFile = partitionFileMap
+                    .get(Integer.toString(next.topicPartition().partition()));
             // Tell PartitionFileImpl to add the current record to the list of records that are going to be added to the file.
             recordPartitionFile.addRecord(next);
             batchBytes = batchBytes + next.size(); // metrics
