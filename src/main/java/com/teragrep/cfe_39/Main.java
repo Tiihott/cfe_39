@@ -84,7 +84,7 @@ public final class Main {
         Configurator.reconfigure(log4j2Config.toUri());
 
         // KafkaConfiguration
-        final PathConfiguration kafkaPathConfiguration = new PathConfiguration(commonConfig.egressConfigurationFile());
+        final PathConfiguration kafkaPathConfiguration = new PathConfiguration(commonConfig.ingressConfigurationFile());
         final Map<String, String> kafkaMap;
         try {
             kafkaMap = kafkaPathConfiguration.asMap();
@@ -96,7 +96,7 @@ public final class Main {
         KafkaConfiguration kafkaConfig = new KafkaConfiguration(kafkaMap);
 
         // HdfsConfiguration
-        final PathConfiguration hdfsPathConfiguration = new PathConfiguration(commonConfig.ingressConfigurationFile());
+        final PathConfiguration hdfsPathConfiguration = new PathConfiguration(commonConfig.egressConfigurationFile());
         final Map<String, String> hdfsMap;
         try {
             hdfsMap = hdfsPathConfiguration.asMap();
