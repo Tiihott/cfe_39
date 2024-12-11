@@ -93,11 +93,15 @@ public class BatchDistributionTest {
     @BeforeEach
     public void startMiniCluster() {
         assertDoesNotThrow(() -> {
+            File queueDir = new File(System.getProperty("user.dir") + "/target/AVRO");
+            if (!queueDir.exists()) {
+                queueDir.mkdirs();
+            }
             Map<String, String> map = new HashMap<>();
             map.put("log4j2.configurationFile", "/opt/teragrep/cfe_39/etc/log4j2.properties");
             map.put("egress.configurationFile", "/opt/teragrep/cfe_39/etc/egress.properties");
             map.put("ingress.configurationFile", "/opt/teragrep/cfe_39/etc/ingress.properties");
-            map.put("queueDirectory", System.getProperty("user.dir") + "/etc/AVRO/");
+            map.put("queueDirectory", System.getProperty("user.dir") + "/target/AVRO/");
             map.put("queueTopicPattern", "^testConsumerTopic-*$");
             map.put("skipNonRFC5424Records", "true");
             map.put("skipEmptyRFC5424Records", "true");
